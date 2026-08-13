@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevGear E-Commerce Stor</title>
+</head>
+<body>
+    <h1>Welcome to the world of Electronics</h1>
+
+    <button type="button" onclick="showLogin()">Login</button>
+    <button type="button" onclick="showSignup()">Sign Up</button>
+
+    <form action="login.php" method="post">
+        <input type="hidden" name="form_type" id="form_type" value="login">
+
+        <label for="username">Username or Email</label><br>
+        <input type="text" placeholder="Username or email" name="username" id="username" required><br>
+
+        <label for="password">Password</label><br>
+        <input type="password" placeholder="Password" name="password" id="password" required><br>
+
+        <div id="signup-details" style="display: none;">
+            <label for="confirm_password">Confirm Password</label><br>
+            <input type="password" placeholder="Confirm password" name="confirm_password" id="confirm_password"><br>
+
+            <label for="phone_number">Phone Number</label><br>
+            <input type="tel" placeholder="Phone number" name="phone_number" id="phone_number"><br>
+
+            <label for="email">Email</label><br>
+            <input type="email" placeholder="Email" name="email" id="email"><br>
+
+            <label for="state">State</label><br>
+            <select name="state" id="state">
+                <option value="" selected disabled>Select a state</option>
+                <option value="Andhra Pradesh">Andhra Pradesh</option>
+                <option value="Kerala">Kerala</option>
+                <option value="Karnataka">Karnataka</option>
+                <option value="Tamil Nadu">Tamil Nadu</option>
+                <option value="Telangana">Telangana</option>
+            </select><br>
+
+            <input type="checkbox" name="terms" id="terms">
+            <label for="terms">I agree to the terms and conditions</label><br>
+        </div>
+
+        <button type="submit" id="submit-button">Login</button>
+    </form>
+
+    <script>
+        function showLogin() {
+            document.getElementById('signup-details').style.display = 'none';
+            document.getElementById('form_type').value = 'login';
+            document.getElementById('submit-button').textContent = 'Login';
+            setSignupRequired(false);
+        }
+
+        function showSignup() {
+            document.getElementById('signup-details').style.display = 'block';
+            document.getElementById('form_type').value = 'signup';
+            document.getElementById('submit-button').textContent = 'Sign Up';
+            setSignupRequired(true);
+        }
+
+        function setSignupRequired(isRequired) {
+            ['confirm_password', 'phone_number', 'email', 'state', 'terms'].forEach(function (id) {
+                document.getElementById(id).required = isRequired;
+            });
+        }
+    </script>
+</body>
