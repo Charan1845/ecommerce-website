@@ -3,13 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DevGear E-Commerce Stor</title>
+    <title>DevGear E-Commerce Store</title>
+    <link rel="stylesheet" href="loginstyle.css">
 </head>
 <body>
-    <h1>Welcome to the world of Electronics</h1>
+    <main class="login-page">
+        <h1>Welcome to the world of Electronics</h1>
 
-    <button type="button" onclick="showLogin()">Login</button>
-    <button type="button" onclick="showSignup()">Sign Up</button>
+        <div class="form-switcher">
+            <button type="button" onclick="showLogin()">Login</button>
+            <button type="button" onclick="showSignup()">Sign Up</button>
+            
+        </div>
 
     <form action="login.php" method="post">
         <input type="hidden" name="form_type" id="form_type" value="login">
@@ -46,6 +51,7 @@
 
         <button type="submit" id="submit-button">Login</button>
     </form>
+    </main>
 
     <script>
         function showLogin() {

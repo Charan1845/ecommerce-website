@@ -1,0 +1,33 @@
+body{
+    background-image:url("https://unsplash.com/photos/person-using-macbook-pro-npxXWgQ33ZQ"); 
+}
+form{
+    height:270px;
+    width:300px;
+    border-width: 1px;
+    background-color: lightblue;
+    border-style: solid;
+    border-radius:10px;
+    padding-top:5px;
+    border-color: brown;
+    transition:1s;
+    
+}
+form:hover{
+    box-shadow: 0 0 10px 5px brown;
+    background-color: lightgreen;
+}
+
+h1{
+    text-align: center;
+    color: brown;
+    border-style:dotted;
+    font-family: 'Courier New', Courier, monospace;
+}
+button{
+    border-radius:5px;
+    padding-left:25px;
+    padding-right:25px;
+    color:black;
+
+}
