@@ -23,14 +23,30 @@ const H = 600;
 
 /** A colour per brand, so the shelf does not look like one product repeated. */
 const BRAND_COLOR = {
-  // One colour per DevGear line, so a shelf of products does not read as the
-  // same object repeated twelve times.
-  'DevGear Forge': '#f97316', // mechanical and gaming
-  'DevGear Glide': '#0d9488', // mice
-  'DevGear Echo': '#a855f7', // audio
-  'DevGear Vista': '#2563eb', // monitors
-  'DevGear Slate': '#64748b', // slim office gear
-  'DevGear Core': '#0ea5e9', // budget range
+  Keychron: '#f0a500',
+  Logitech: '#00b8fc',
+  Zebronics: '#e8112d',
+  Redragon: '#c8102e',
+  Dell: '#0076ce',
+  Corsair: '#facc15',
+  'Ant Esports': '#ff4d00',
+  'Cosmic Byte': '#8b5cf6',
+  HP: '#0096d6',
+  Razer: '#44d62c',
+  Sony: '#1a1a1a',
+  boAt: '#ff2e2e',
+  OnePlus: '#eb0028',
+  HyperX: '#e6162d',
+  JBL: '#ff6600',
+  Sennheiser: '#0a5c36',
+  LG: '#a50034',
+  Samsung: '#1428a0',
+  Acer: '#83b81a',
+  BenQ: '#8b5cf6',
+  ASUS: '#00539b',
+  MSI: '#ff0000',
+  'Western Digital': '#0057b8',
+  SanDisk: '#e30613',
 };
 
 const BODY_DARK = '#1f2937';

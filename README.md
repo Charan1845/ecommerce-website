@@ -285,6 +285,102 @@ DEPLOY.md              step by step, start to finish
 | POST | `/api/payments/verify` | logged in, own orders only |
 | POST | `/api/payments/sandbox/authorize` | logged in; 404 unless in sandbox mode |
 
+## The catalogue and the photographs
+
+The 48 products carry real manufacturer names - Keychron, Logitech, Sony and
+so on - because they read like a shop rather than like placeholder text. What
+follows from that choice is handled openly rather than hidden.
+
+`scripts/fetch-photos.js` downloads one photograph per product from Pexels and
+records the photographer in `data/photo-credits.json`. **These are stock
+photographs of similar hardware, not photographs of the products named.** The
+product page says exactly that, in those words, under every picture, along
+with the photographer's name. The footer on every page says the shop is a
+demo and that no order is fulfilled.
+
+That combination is the honest position available here: nobody could mistake
+the picture for the manufacturer's own, and nobody could mistake the shop for
+a real one.
+
+Three filters choose the photographs, and the third is the interesting one.
+
+**Text filters** reject descriptions that name a manufacturer, or that
+describe a person, a data centre or a row of CRTs from 1998.
+
+**A relevance rule** requires the description to mention the thing being sold,
+because "computer monitor" otherwise returns a photograph of cabling.
+
+**A person looking at all 48.** Text filters cannot see. A photograph of a
+Logitech MX Master described only as "a sleek black wireless mouse" passes
+every automated check and still puts a visible logi logo in the picture - as
+do two pairs of Marshall headphones, an Audio-Technica and a Logitech Pebble.
+Those are listed in `data/photo-blocklist.json` with the reason, and the
+fetcher skips them permanently. A logo belonging to one company on a product
+sold under another company's name is the one thing worth being strict about.
+
+Photographs are matched to what each product is rather than taken in order,
+after a product called Earbuds was handed a photograph of over-ear headphones.
+
+`scripts/make-images.js` still generates a drawing per product, in each
+brand's colour, and works if you ever want the catalogue back on
+illustrations. An earlier version of the photo fetcher used Wikimedia Commons,
+which needs no API key; it was abandoned because Commons is an archive rather
+than a catalogue and returned ceramic mouse ornaments and a cat in front of a
+monitor. Both are in the git history.
+
+## Layout
+
+```
+server.js              starts the server
+src/
+  app.js               builds the Express app (kept separate so tests can start their own)
+  db.js                the database connection and the query helpers
+  schema.sql           the tables
+  schema.pg.sql        the same tables for PostgreSQL
+  seed.js              loads data/products.json, creates the owner and demo accounts
+  auth.js              hashing, login cookie, requireAuth / requireOwner
+  payments.js          picks a provider, creates payment orders, verifies signatures
+  sandbox-gateway.js   the pretend gateway, kept away from the shop's own code
+  rate-limit.js        slows down password guessing
+  routes/              auth, products, cart, orders, admin, payments
+public/                the pages the browser loads
+scripts/make-images.js draws the 48 product illustrations
+data/products.json     the catalogue
+tests/                 checkout, stock, pricing, access control
+Dockerfile             for Cloud Run, Container Apps, anything container-shaped
+render.yaml            so Render can create the service without a form
+DEPLOY.md              step by step, start to finish
+```
+
+## API
+
+| Method | Path | Who |
+|---|---|---|
+| POST | `/api/auth/signup` | anyone |
+| POST | `/api/auth/login` | anyone |
+| POST | `/api/auth/logout` | anyone |
+| GET | `/api/auth/me` | anyone |
+| GET | `/api/auth/demo` | anyone |
+| POST | `/api/auth/demo-login` | anyone |
+| GET | `/api/products` | logged in |
+| GET | `/api/products/:id` | logged in |
+| GET | `/api/cart` | logged in |
+| POST | `/api/cart` | logged in |
+| PATCH | `/api/cart/:productId` | logged in |
+| DELETE | `/api/cart/:productId` | logged in |
+| POST | `/api/orders` | logged in |
+| GET | `/api/orders` | logged in |
+| GET | `/api/orders/:id` | logged in, own orders only |
+| GET | `/api/admin/stats` | owner |
+| GET | `/api/admin/products` | owner |
+| PATCH | `/api/admin/products/:id/stock` | owner |
+| GET | `/api/admin/orders` | owner |
+| GET | `/api/admin/customers` | owner |
+| GET | `/api/payments/config` | anyone |
+| POST | `/api/payments/orders/:id` | logged in, own orders only |
+| POST | `/api/payments/verify` | logged in, own orders only |
+| POST | `/api/payments/sandbox/authorize` | logged in; 404 unless in sandbox mode |
+
 ## The catalogue
 
 The 48 products are DevGear's own - Forge, Glide, Echo, Vista, Slate and Core

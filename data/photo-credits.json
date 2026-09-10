@@ -1,6 +1,6 @@
 {
   "kb-01.jpg": {
-    "product": "Forge 84 Wireless Mechanical Keyboard",
+    "product": "K2 Wireless Mechanical Keyboard",
     "source": "Pexels",
     "id": 31076950,
     "photographer": "Sebastian Luna",
@@ -11,18 +11,18 @@
     "alt": "A variety of mechanical keyboards neatly displayed on a shelf in a brick-walled store interior."
   },
   "kb-02.jpg": {
-    "product": "Slate Low-Profile Wireless Keyboard",
+    "product": "MX Keys S Wireless Keyboard",
     "source": "Pexels",
-    "id": 12561283,
-    "photographer": "An  Tran",
-    "photographer_url": "https://www.pexels.com/@an-tran-31930396",
-    "page": "https://www.pexels.com/photo/black-computer-keyboard-on-wooden-table-12561283/",
+    "id": 5152261,
+    "photographer": "FOX ^.ᆽ.^= ∫",
+    "photographer_url": "https://www.pexels.com/@fox-58267",
+    "page": "https://www.pexels.com/photo/close-up-of-a-keyboard-5152261/",
     "licence": "Pexels licence",
     "licence_url": "https://www.pexels.com/license/",
-    "alt": "A detailed view of a mechanical keyboard with orange accent key on a wooden table."
+    "alt": "Modern mechanical keyboard with red accents on wooden desk, captured from above."
   },
   "kb-03.jpg": {
-    "product": "Core Full-Size Mechanical Keyboard",
+    "product": "Max Plus Mechanical Keyboard",
     "source": "Pexels",
     "id": 5805490,
     "photographer": "Athena Sandrini",
@@ -33,7 +33,7 @@
     "alt": "From above of keyboard panel without keycaps full of dust and dirt before cleaning"
   },
   "kb-04.jpg": {
-    "product": "Forge TKL Gaming Keyboard",
+    "product": "Kumara K552 Gaming Keyboard",
     "source": "Pexels",
     "id": 4792732,
     "photographer": "Anete Lusina",
@@ -44,18 +44,7 @@
     "alt": "Contemporary computer backlit keyboard placed on wooden desk near mouse in light room"
   },
   "kb-05.jpg": {
-    "product": "Slate Multi-Device Bluetooth Keyboard",
-    "source": "Pexels",
-    "id": 5152261,
-    "photographer": "FOX ^.ᆽ.^= ∫",
-    "photographer_url": "https://www.pexels.com/@fox-58267",
-    "page": "https://www.pexels.com/photo/close-up-of-a-keyboard-5152261/",
-    "licence": "Pexels licence",
-    "licence_url": "https://www.pexels.com/license/",
-    "alt": "Modern mechanical keyboard with red accents on wooden desk, captured from above."
-  },
-  "kb-06.jpg": {
-    "product": "Core Wired Office Keyboard",
+    "product": "K380 Multi-Device Bluetooth Keyboard",
     "source": "Pexels",
     "id": 35504606,
     "photographer": "FOX ^.ᆽ.^= ∫",
@@ -65,8 +54,19 @@
     "licence_url": "https://www.pexels.com/license/",
     "alt": "Two custom mechanical keyboards featuring pastel keycaps on a cute, themed desk mat."
   },
+  "kb-06.jpg": {
+    "product": "KB216 Wired Keyboard",
+    "source": "Pexels",
+    "id": 6804466,
+    "photographer": "FOX ^.ᆽ.^= ∫",
+    "photographer_url": "https://www.pexels.com/@fox-58267",
+    "page": "https://www.pexels.com/photo/black-and-orange-computer-keyboard-6804466/",
+    "licence": "Pexels licence",
+    "licence_url": "https://www.pexels.com/license/",
+    "alt": "Detailed close-up of a mechanical keyboard with colored keycaps on a wooden desk. Ideal for tech enthusiasts."
+  },
   "kb-07.jpg": {
-    "product": "Forge Elite RGB Mechanical Keyboard",
+    "product": "K70 RGB Pro Mechanical Keyboard",
     "source": "Pexels",
     "id": 34877295,
     "photographer": "FOX ^.ᆽ.^= ∫",
@@ -77,7 +77,7 @@
     "alt": "Close-up of colorful mechanical keyboards on a desk, showcasing unique keycaps and modern design."
   },
   "kb-08.jpg": {
-    "product": "Forge Mini 60% Mechanical Keyboard",
+    "product": "MK1200 Mini Mechanical Keyboard",
     "source": "Pexels",
     "id": 27791751,
     "photographer": "Click Jeth",
@@ -88,7 +88,7 @@
     "alt": "A modern mechanical keyboard placed on a clean wooden desk, highlighting minimalist design."
   },
   "kb-09.jpg": {
-    "product": "Core Firefly Gaming Keyboard",
+    "product": "CB-GK-16 Firefly Gaming Keyboard",
     "source": "Pexels",
     "id": 36203655,
     "photographer": "Marcus Richardson",
@@ -99,18 +99,18 @@
     "alt": "A sleek black mechanical keyboard placed on a wooden desk, ideal for gaming or office use."
   },
   "kb-10.jpg": {
-    "product": "Forge Pro Hot-Swap Keyboard",
+    "product": "K8 Pro Wireless Mechanical Keyboard",
     "source": "Pexels",
-    "id": 6804466,
-    "photographer": "FOX ^.ᆽ.^= ∫",
-    "photographer_url": "https://www.pexels.com/@fox-58267",
-    "page": "https://www.pexels.com/photo/black-and-orange-computer-keyboard-6804466/",
+    "id": 12561283,
+    "photographer": "An  Tran",
+    "photographer_url": "https://www.pexels.com/@an-tran-31930396",
+    "page": "https://www.pexels.com/photo/black-computer-keyboard-on-wooden-table-12561283/",
     "licence": "Pexels licence",
     "licence_url": "https://www.pexels.com/license/",
-    "alt": "Detailed close-up of a mechanical keyboard with colored keycaps on a wooden desk. Ideal for tech enthusiasts."
+    "alt": "A detailed view of a mechanical keyboard with orange accent key on a wooden table."
   },
   "kb-11.jpg": {
-    "product": "Core Prodigy Gaming Keyboard",
+    "product": "G213 Prodigy Gaming Keyboard",
     "source": "Pexels",
     "id": 32532386,
     "photographer": "Mahantraa Photography",
@@ -121,7 +121,7 @@
     "alt": "Vibrant close-up of a backlit computer keyboard in a dark setting with glowing blue lights."
   },
   "kb-12.jpg": {
-    "product": "Slate Keyboard and Mouse Combo",
+    "product": "230 Wireless Keyboard and Mouse Combo",
     "source": "Pexels",
     "id": 38555186,
     "photographer": "Sogi .",
@@ -132,7 +132,7 @@
     "alt": "A sleek home office setup featuring a mechanical keyboard, digital clock, and speakers."
   },
   "ms-01.jpg": {
-    "product": "Glide Master Wireless Mouse",
+    "product": "MX Master 3S Wireless Mouse",
     "source": "Pexels",
     "id": 7151698,
     "photographer": "Helena Lopes",
@@ -143,7 +143,7 @@
     "alt": "A wireless mouse beside a laptop on a wooden desk, ideal for tech and workspace themes."
   },
   "ms-02.jpg": {
-    "product": "Glide Strike Gaming Mouse",
+    "product": "DeathAdder Essential Gaming Mouse",
     "source": "Pexels",
     "id": 28779690,
     "photographer": "Atahan Demir",
@@ -154,7 +154,7 @@
     "alt": "Futuristic gaming mouse and keyboard on a neon-lit desk setup, perfect for gaming enthusiasts."
   },
   "ms-03.jpg": {
-    "product": "Core Gaming Mouse",
+    "product": "Zeb-Transformer-M Gaming Mouse",
     "source": "Pexels",
     "id": 19055620,
     "photographer": "Arjunn. la",
@@ -165,7 +165,7 @@
     "alt": "A modern workspace featuring a laptop, digital clock, gaming mouse, and keyboard, ideal for work and tech enthusiasts."
   },
   "ms-04.jpg": {
-    "product": "Glide Lite Wireless Mouse",
+    "product": "M235 Wireless Mouse",
     "source": "Pexels",
     "id": 18295023,
     "photographer": "Click Jeth",
@@ -176,7 +176,7 @@
     "alt": "A top view of a sleek black wireless mouse on a red background, highlighting modern technology."
   },
   "ms-05.jpg": {
-    "product": "Core Wired Optical Mouse",
+    "product": "X1000 Wired Mouse",
     "source": "Pexels",
     "id": 20509996,
     "photographer": "Matheus Bertelli",
@@ -187,7 +187,7 @@
     "alt": "A sleek black wired computer mouse with USB connection on a plain white background."
   },
   "ms-06.jpg": {
-    "product": "Glide Apex Gaming Mouse",
+    "product": "G502 HERO Gaming Mouse",
     "source": "Pexels",
     "id": 16645416,
     "photographer": "Boris Hamer",
@@ -198,29 +198,7 @@
     "alt": "Close-up of a silver laptop and black wireless mouse on a white desk."
   },
   "ms-07.jpg": {
-    "product": "Core Cobra RGB Mouse",
-    "source": "Pexels",
-    "id": 20509993,
-    "photographer": "Matheus Bertelli",
-    "photographer_url": "https://www.pexels.com/@bertellifotografia",
-    "page": "https://www.pexels.com/photo/mouse-in-a-studio-20509993/",
-    "licence": "Pexels licence",
-    "licence_url": "https://www.pexels.com/license/",
-    "alt": "A black wired computer mouse with USB connector on a plain background."
-  },
-  "ms-08.jpg": {
-    "product": "Core Office Mouse",
-    "source": "Pexels",
-    "id": 12795364,
-    "photographer": "Marvin Henner",
-    "photographer_url": "https://www.pexels.com/@marvin-henner-269807953",
-    "page": "https://www.pexels.com/photo/close-up-photo-of-a-computer-mouse-12795364/",
-    "licence": "Pexels licence",
-    "licence_url": "https://www.pexels.com/license/",
-    "alt": "Close-up of a stylish wireless computer mouse with a fabric cover, showcasing modern design."
-  },
-  "ms-09.jpg": {
-    "product": "Glide Feather Wireless Mouse",
+    "product": "Cobra M711 Gaming Mouse",
     "source": "Pexels",
     "id": 17484878,
     "photographer": "Czapp Árpád",
@@ -230,30 +208,19 @@
     "licence_url": "https://www.pexels.com/license/",
     "alt": "Close-up of a wireless mouse on a laptop keyboard in low light, highlighting modern technology."
   },
-  "ms-10.jpg": {
-    "product": "Core Lumen RGB Mouse",
+  "ms-08.jpg": {
+    "product": "MS116 Wired Optical Mouse",
     "source": "Pexels",
-    "id": 20510010,
+    "id": 20509993,
     "photographer": "Matheus Bertelli",
     "photographer_url": "https://www.pexels.com/@bertellifotografia",
-    "page": "https://www.pexels.com/photo/top-view-of-a-black-computer-mouse-on-white-background-20510010/",
+    "page": "https://www.pexels.com/photo/mouse-in-a-studio-20509993/",
     "licence": "Pexels licence",
     "licence_url": "https://www.pexels.com/license/",
-    "alt": "Top view of a black wired computer mouse on a clean white surface."
+    "alt": "A black wired computer mouse with USB connector on a plain background."
   },
-  "ms-11.jpg": {
-    "product": "Slate Pebble Silent Mouse",
-    "source": "Pexels",
-    "id": 13211073,
-    "photographer": "Maria Tyutina",
-    "photographer_url": "https://www.pexels.com/@mtyutina",
-    "page": "https://www.pexels.com/photo/wireless-mouse-on-desk-13211073/",
-    "licence": "Pexels licence",
-    "licence_url": "https://www.pexels.com/license/",
-    "alt": "Close-up of a mouse, keyboard, and smartphone in a modern workspace."
-  },
-  "ms-12.jpg": {
-    "product": "Glide Pro Wireless Gaming Mouse",
+  "ms-09.jpg": {
+    "product": "Viper V3 HyperSpeed Wireless Mouse",
     "source": "Pexels",
     "id": 6073700,
     "photographer": "Nguyễn Hiếu",
@@ -263,8 +230,41 @@
     "licence_url": "https://www.pexels.com/license/",
     "alt": "Sleek black wireless computer mouse resting on a dark surface in close-up view."
   },
+  "ms-10.jpg": {
+    "product": "GM320 RGB Gaming Mouse",
+    "source": "Pexels",
+    "id": 12795364,
+    "photographer": "Marvin Henner",
+    "photographer_url": "https://www.pexels.com/@marvin-henner-269807953",
+    "page": "https://www.pexels.com/photo/close-up-photo-of-a-computer-mouse-12795364/",
+    "licence": "Pexels licence",
+    "licence_url": "https://www.pexels.com/license/",
+    "alt": "Close-up of a stylish wireless computer mouse with a fabric cover, showcasing modern design."
+  },
+  "ms-11.jpg": {
+    "product": "Pebble M350 Wireless Mouse",
+    "source": "Pexels",
+    "id": 7151690,
+    "photographer": "Helena Lopes",
+    "photographer_url": "https://www.pexels.com/@helenalopes",
+    "page": "https://www.pexels.com/photo/black-cordless-computer-mouse-on-brown-wooden-desk-7151690/",
+    "licence": "Pexels licence",
+    "licence_url": "https://www.pexels.com/license/",
+    "alt": "A wireless computer mouse with ergonomic design placed on a wooden desk next to a laptop."
+  },
+  "ms-12.jpg": {
+    "product": "Katar Pro Wireless Gaming Mouse",
+    "source": "Pexels",
+    "id": 7371999,
+    "photographer": "Andrey Matveev",
+    "photographer_url": "https://www.pexels.com/@zeleboba",
+    "page": "https://www.pexels.com/photo/a-close-up-shot-of-a-white-computer-mouse-7371999/",
+    "licence": "Pexels licence",
+    "licence_url": "https://www.pexels.com/license/",
+    "alt": "Minimalist white wireless mouse on yellow background, emphasizing modern technology and design."
+  },
   "hs-01.jpg": {
-    "product": "Echo Quiet Noise Cancelling Headphones",
+    "product": "WH-CH720N Noise Cancelling Headphones",
     "source": "Pexels",
     "id": 1591,
     "photographer": "SplitShire",
@@ -275,7 +275,7 @@
     "alt": "Close-up of red and black headphones on a wooden surface, ideal for music concepts."
   },
   "hs-02.jpg": {
-    "product": "Core Rockerz Bluetooth Headphones",
+    "product": "Rockerz 450 Bluetooth Headphones",
     "source": "Pexels",
     "id": 20385204,
     "photographer": "Paul Seling",
@@ -286,18 +286,18 @@
     "alt": "Close-up of professional headphones on a vivid orange background, ideal for audio and tech concepts."
   },
   "hs-03.jpg": {
-    "product": "Echo Air Wireless Headphones",
+    "product": "Buds 3 Wireless Earbuds",
     "source": "Pexels",
-    "id": 3394665,
-    "photographer": "Sound On",
-    "photographer_url": "https://www.pexels.com/@sound-on",
-    "page": "https://www.pexels.com/photo/white-wireless-headphones-3394665/",
+    "id": 26564105,
+    "photographer": "Grzegorz  Lewandowski",
+    "photographer_url": "https://www.pexels.com/@grzegorz-lewandowski-380083092",
+    "page": "https://www.pexels.com/photo/close-up-of-headphones-26564105/",
     "licence": "Pexels licence",
     "licence_url": "https://www.pexels.com/license/",
-    "alt": "Sleek white wireless headphones against a white backdrop, showcasing minimalist design and modern technology."
+    "alt": "Artistic black and white close-up of wireless headphones, highlighting modern design."
   },
   "hs-04.jpg": {
-    "product": "Forge Stinger Gaming Headset",
+    "product": "Cloud Stinger 2 Gaming Headset",
     "source": "Pexels",
     "id": 185030,
     "photographer": "Barthy Bonhomme",
@@ -308,7 +308,7 @@
     "alt": "Black and white close-up of a microphone and headphones on a stand, perfect for music and recording studio themes."
   },
   "hs-05.jpg": {
-    "product": "Core USB Call Headset",
+    "product": "H390 USB Headset",
     "source": "Pexels",
     "id": 999299,
     "photographer": "Francesco Paggiaro",
@@ -319,18 +319,18 @@
     "alt": "A variety of modern audio headsets neatly arranged on a display table indoors."
   },
   "hs-06.jpg": {
-    "product": "Echo Tune Wireless Headphones",
+    "product": "Tune 510BT Wireless Headphones",
     "source": "Pexels",
-    "id": 5269752,
-    "photographer": "Harvey Tan Villarino",
-    "photographer_url": "https://www.pexels.com/@harveyvillarino",
-    "page": "https://www.pexels.com/photo/close-up-shot-of-black-headphones-on-a-wooden-surface-5269752/",
+    "id": 3394665,
+    "photographer": "Sound On",
+    "photographer_url": "https://www.pexels.com/@sound-on",
+    "page": "https://www.pexels.com/photo/white-wireless-headphones-3394665/",
     "licence": "Pexels licence",
     "licence_url": "https://www.pexels.com/license/",
-    "alt": "Close-up of sleek wireless headphones placed on a polished wooden surface under soft studio lighting."
+    "alt": "Sleek white wireless headphones against a white backdrop, showcasing minimalist design and modern technology."
   },
   "hs-07.jpg": {
-    "product": "Forge Stereo Gaming Headset",
+    "product": "HS55 Stereo Gaming Headset",
     "source": "Pexels",
     "id": 36357088,
     "photographer": "Primitive Spaces",
@@ -341,7 +341,7 @@
     "alt": "High-quality studio headphones and microphone for professional audio setups."
   },
   "hs-08.jpg": {
-    "product": "Forge Immortal Gaming Headset",
+    "product": "Immortal 1000D Gaming Headset",
     "source": "Pexels",
     "id": 210927,
     "photographer": "Aleksandar Spasojevic",
@@ -352,7 +352,7 @@
     "alt": "Minimalist image of black over-ear headphones on a white background."
   },
   "hs-09.jpg": {
-    "product": "Echo Studio Wired Headphones",
+    "product": "HD 400S Wired Headphones",
     "source": "Pexels",
     "id": 38725881,
     "photographer": "Jan van der Wolf",
@@ -363,7 +363,7 @@
     "alt": "A row of four black headphones hanging neatly on wall hooks casting shadows."
   },
   "hs-10.jpg": {
-    "product": "Forge Shark Esports Headset",
+    "product": "BlackShark V2 X Gaming Headset",
     "source": "Pexels",
     "id": 5650531,
     "photographer": "cottonbro studio",
@@ -374,7 +374,7 @@
     "alt": "Close-up of professional headphones hanging on a perforated music stand in a studio setting."
   },
   "hs-11.jpg": {
-    "product": "Core Wired Gaming Headset",
+    "product": "H520W Wired Gaming Headset",
     "source": "Pexels",
     "id": 11398246,
     "photographer": "Benjamin Lehman",
@@ -385,18 +385,18 @@
     "alt": "Stylish black headphones with glowing accents on a reflective surface against a dark backdrop."
   },
   "hs-12.jpg": {
-    "product": "Echo Flagship Noise Cancelling Headphones",
+    "product": "WH-1000XM5 Noise Cancelling Headphones",
     "source": "Pexels",
-    "id": 3394659,
-    "photographer": "Sound On",
-    "photographer_url": "https://www.pexels.com/@sound-on",
-    "page": "https://www.pexels.com/photo/books-between-headphones-3394659/",
+    "id": 5269752,
+    "photographer": "Harvey Tan Villarino",
+    "photographer_url": "https://www.pexels.com/@harveyvillarino",
+    "page": "https://www.pexels.com/photo/close-up-shot-of-black-headphones-on-a-wooden-surface-5269752/",
     "licence": "Pexels licence",
     "licence_url": "https://www.pexels.com/license/",
-    "alt": "White headphones resting on colorful books, symbolizing modern audio technology."
+    "alt": "Close-up of sleek wireless headphones placed on a polished wooden surface under soft studio lighting."
   },
   "mn-01.jpg": {
-    "product": "Vista 24-inch IPS Monitor",
+    "product": "S2421HN 24-inch IPS Monitor",
     "source": "Pexels",
     "id": 1714202,
     "photographer": "Josh Sorenson",
@@ -407,7 +407,7 @@
     "alt": "A stylish modern workspace with dual monitors displaying design software in a dimly lit room."
   },
   "mn-02.jpg": {
-    "product": "Core 22-inch Monitor",
+    "product": "22MR410 22-inch Monitor",
     "source": "Pexels",
     "id": 12509206,
     "photographer": "Vladimir Srajber",
@@ -418,7 +418,7 @@
     "alt": "A contemporary office setup featuring computers on desks with modern flat screens."
   },
   "mn-03.jpg": {
-    "product": "Vista 24-inch Everyday Monitor",
+    "product": "LS24C310 24-inch Monitor",
     "source": "Pexels",
     "id": 159299,
     "photographer": "Pixabay",
@@ -429,18 +429,18 @@
     "alt": "A dual screen setup showcasing programming code and image editing software."
   },
   "mn-04.jpg": {
-    "product": "Forge Nitro 24-inch Gaming Monitor",
+    "product": "Nitro VG240Y 24-inch Gaming Monitor",
     "source": "Pexels",
-    "id": 7858742,
-    "photographer": "Ron Lach",
-    "photographer_url": "https://www.pexels.com/@ron-lach",
-    "page": "https://www.pexels.com/photo/computer-on-the-table-7858742/",
+    "id": 777001,
+    "photographer": "XXSS IS BACK",
+    "photographer_url": "https://www.pexels.com/@xexusdesigner",
+    "page": "https://www.pexels.com/photo/two-computer-flat-screen-monitors-turned-on-777001/",
     "licence": "Pexels licence",
     "licence_url": "https://www.pexels.com/license/",
-    "alt": "High-tech gaming setup featuring a curved monitor, RGB keyboard, and vibrant lighting."
+    "alt": "Dual monitors with blue lighting on a gaming desk setup."
   },
   "mn-05.jpg": {
-    "product": "Vista 24-inch Eye-Care Monitor",
+    "product": "GW2480 24-inch Eye-Care Monitor",
     "source": "Pexels",
     "id": 37848030,
     "photographer": "Tom Fisk",
@@ -451,18 +451,18 @@
     "alt": "A desk setup showing photo editing software on multiple monitors, a keyboard, and peripherals."
   },
   "mn-06.jpg": {
-    "product": "Forge Arena 24-inch Gaming Monitor",
+    "product": "TUF VG249Q1A 24-inch Gaming Monitor",
     "source": "Pexels",
-    "id": 777001,
-    "photographer": "XXSS IS BACK",
-    "photographer_url": "https://www.pexels.com/@xexusdesigner",
-    "page": "https://www.pexels.com/photo/two-computer-flat-screen-monitors-turned-on-777001/",
+    "id": 5380792,
+    "photographer": "Tima Miroshnichenko",
+    "photographer_url": "https://www.pexels.com/@tima-miroshnichenko",
+    "page": "https://www.pexels.com/photo/close-up-view-of-system-hacking-5380792/",
     "licence": "Pexels licence",
     "licence_url": "https://www.pexels.com/license/",
-    "alt": "Dual monitors with blue lighting on a gaming desk setup."
+    "alt": "Close-up of dual computer monitors with green coding interfaces in a dark room, highlighting cyber security themes."
   },
   "mn-07.jpg": {
-    "product": "Core 22-inch Office Monitor",
+    "product": "M22f 22-inch Monitor",
     "source": "Pexels",
     "id": 5499551,
     "photographer": "Diana ✨",
@@ -473,7 +473,7 @@
     "alt": "Contemporary computers with black screens placed on desk near window in classroom or office"
   },
   "mn-08.jpg": {
-    "product": "Core 19-inch Compact Monitor",
+    "product": "ZEB-A19HD 19-inch Monitor",
     "source": "Pexels",
     "id": 7491599,
     "photographer": "Tunde  TNT",
@@ -484,18 +484,18 @@
     "alt": "A stylish home office setup featuring dual monitors and ambient lighting, perfect for productivity and relaxation."
   },
   "mn-09.jpg": {
-    "product": "Vista 27-inch IPS Monitor",
+    "product": "27MP400 27-inch IPS Monitor",
     "source": "Pexels",
-    "id": 5380792,
-    "photographer": "Tima Miroshnichenko",
-    "photographer_url": "https://www.pexels.com/@tima-miroshnichenko",
-    "page": "https://www.pexels.com/photo/close-up-view-of-system-hacking-5380792/",
+    "id": 8353774,
+    "photographer": "Kampus Production",
+    "photographer_url": "https://www.pexels.com/@kampus",
+    "page": "https://www.pexels.com/photo/photo-of-workspace-with-two-monitors-and-keyboard-on-table-8353774/",
     "licence": "Pexels licence",
     "licence_url": "https://www.pexels.com/license/",
-    "alt": "Close-up of dual computer monitors with green coding interfaces in a dark room, highlighting cyber security themes."
+    "alt": "Stylish contemporary office featuring multiple computer monitors and ergonomic chairs."
   },
   "mn-10.jpg": {
-    "product": "Vista Pro 24-inch Adjustable Monitor",
+    "product": "P2422H 24-inch Professional Monitor",
     "source": "Pexels",
     "id": 20148810,
     "photographer": "Jakub Zerdzicki",
@@ -506,7 +506,7 @@
     "alt": "Sleek home office setup with multiple monitors, keyboard, smartphone, and stylish decor."
   },
   "mn-11.jpg": {
-    "product": "Core 24-inch Low Blue Light Monitor",
+    "product": "PRO MP243 24-inch Monitor",
     "source": "Pexels",
     "id": 7172650,
     "photographer": "Matheus Bertelli",
@@ -517,14 +517,14 @@
     "alt": "A modern desktop setup featuring dual monitors, keyboard, and mouse, ideal for graphic design."
   },
   "mn-12.jpg": {
-    "product": "Forge Odyssey 27-inch 240Hz Monitor",
+    "product": "Odyssey G4 27-inch Gaming Monitor",
     "source": "Pexels",
-    "id": 8353774,
-    "photographer": "Kampus Production",
-    "photographer_url": "https://www.pexels.com/@kampus",
-    "page": "https://www.pexels.com/photo/photo-of-workspace-with-two-monitors-and-keyboard-on-table-8353774/",
+    "id": 7858742,
+    "photographer": "Ron Lach",
+    "photographer_url": "https://www.pexels.com/@ron-lach",
+    "page": "https://www.pexels.com/photo/computer-on-the-table-7858742/",
     "licence": "Pexels licence",
     "licence_url": "https://www.pexels.com/license/",
-    "alt": "Stylish contemporary office featuring multiple computer monitors and ergonomic chairs."
+    "alt": "High-tech gaming setup featuring a curved monitor, RGB keyboard, and vibrant lighting."
   }
 }
