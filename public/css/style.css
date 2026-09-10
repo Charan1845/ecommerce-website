@@ -337,6 +337,31 @@ td.num, th.num { text-align: right; }
   color: var(--ink-soft);
 }
 
+/* ---------- paying ---------- */
+
+.pay-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.pay-note {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-top: 10px;
+  line-height: 1.5;
+}
+.pay-note code {
+  background: #f1f5f9;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
 /* ---------- status pills ---------- */
 
 .pill {

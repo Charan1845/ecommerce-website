@@ -66,7 +66,12 @@ CREATE TABLE IF NOT EXISTS orders (
   shipping_phone   TEXT    NOT NULL,
   shipping_address TEXT    NOT NULL,
   shipping_state   TEXT    NOT NULL,
-  shipping_pincode TEXT    NOT NULL
+  shipping_pincode TEXT    NOT NULL,
+  -- Razorpay's own identifiers, kept so a payment can be traced back to an
+  -- order from their dashboard and vice versa. Null until payment is started.
+  razorpay_order_id   TEXT,
+  razorpay_payment_id TEXT,
+  paid_at             TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_orders_user ON orders (user_id, placed_at DESC);

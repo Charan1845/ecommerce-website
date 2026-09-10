@@ -86,6 +86,14 @@ function createPostgres() {
       await pool.query(sql);
     },
 
+    async columns(table) {
+      const r = await pool.query(
+        'SELECT column_name FROM information_schema.columns WHERE table_name = $1',
+        [table]
+      );
+      return r.rows.map((row) => row.column_name);
+    },
+
     close: () => pool.end(),
     describe: 'PostgreSQL',
   };
@@ -135,6 +143,10 @@ function createSqlite() {
       db.exec(fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8'));
     },
 
+    async columns(table) {
+      return db.prepare(`PRAGMA table_info(${table})`).all().map((row) => row.name);
+    },
+
     close: async () => db.close(),
     describe: `SQLite (${file})`,
   };
@@ -171,8 +183,46 @@ const run = (sql, params) => backend.run(sql, params);
  */
 const transaction = (fn) => backend.transaction(fn);
 
-/** Create any missing tables. Safe to run repeatedly. */
-const applySchema = () => backend.applySchema();
+/**
+ * Columns added after a database was already created.
+ *
+ * CREATE TABLE IF NOT EXISTS does nothing to a table that already exists, so a
+ * new column in the schema file only reaches a fresh database. Live databases
+ * need to be told separately. Each entry here is checked before it is applied,
+ * so this is safe to run on every boot, forever.
+ */
+const LATER_COLUMNS = [
+  { table: 'orders', column: 'razorpay_order_id', sqlite: 'TEXT', pg: 'VARCHAR(80)' },
+  { table: 'orders', column: 'razorpay_payment_id', sqlite: 'TEXT', pg: 'VARCHAR(80)' },
+  // Matches placed_at rather than being TEXT on one engine and a real
+  // timestamp on the other. A column whose type depends on how old the
+  // database is would come back as a string in one place and a Date in
+  // another, and nothing would tell you which.
+  { table: 'orders', column: 'paid_at', sqlite: 'TEXT', pg: 'TIMESTAMPTZ' },
+];
+
+async function migrate() {
+  const applied = [];
+
+  for (const spec of LATER_COLUMNS) {
+    const existing = await backend.columns(spec.table);
+    if (existing.includes(spec.column)) continue;
+
+    const type = USE_POSTGRES ? spec.pg : spec.sqlite;
+    await backend.run(`ALTER TABLE ${spec.table} ADD COLUMN ${spec.column} ${type}`);
+    applied.push(`${spec.table}.${spec.column}`);
+  }
+
+  return applied;
+}
+
+/** Create any missing tables, then add any columns added since. */
+const applySchema = async () => {
+  await backend.applySchema();
+  const added = await migrate();
+  if (added.length) console.log('added missing columns:', added.join(', '));
+  return added;
+};
 
 const close = () => backend.close();
 
@@ -182,6 +232,7 @@ module.exports = {
   run,
   transaction,
   applySchema,
+  migrate,
   close,
   usingPostgres: USE_POSTGRES,
   describe: backend.describe,

@@ -30,7 +30,7 @@ Running the seed again resets every product's stock to its starting number.
 Customers, carts and orders are left alone.
 
 ```bash
-npm test         # 19 tests
+npm test         # 25 tests
 npm run images   # redraw the 48 product illustrations
 ```
 
@@ -154,6 +154,57 @@ The counters live in memory, which is the honest size of the problem for one
 small server - they reset on restart, and several machines would each count
 separately. A shop with real customers would keep them in Redis.
 
+## Paying
+
+Razorpay, in test mode. Switched off unless `RAZORPAY_KEY_ID` and
+`RAZORPAY_KEY_SECRET` are set - with no keys the Pay button simply never
+appears and orders stay `pending`, which is exactly how the shop behaved
+before payments existed.
+
+**This server never sees a card number.** Card details are typed into
+Razorpay's own window, served from Razorpay's domain, and go straight to them.
+That is the whole reason gateways exist: handling raw card data would drag a
+student project into PCI-DSS compliance.
+
+The order of events:
+
+```
+1. browser  -> us          "I want to pay for order 12"
+2. us       -> Razorpay    "create a payment order for 79800 paise"
+3. us       -> browser     razorpay_order_id + our public key
+4. browser  -> Razorpay    card details, directly, never through us
+5. Razorpay -> browser     payment id + a signature
+6. browser  -> us          those three values
+7. us                      recompute the signature and compare
+```
+
+**Step 7 is the only thing standing between the shop and free hardware.**
+Anything the browser sends can be typed by hand, so "payment succeeded" is a
+claim, not a fact. Razorpay signs `<order_id>|<payment_id>` with the key
+secret, which only they and this server know; recomputing that HMAC and
+getting the same answer is what makes the claim believable.
+
+Three more things the verify step checks, each of which is a way to get free
+hardware if it is missing:
+
+- The Razorpay order id must be **the one we created for this order**.
+  Otherwise a genuine signature from a ₹399 mouse could be replayed onto a
+  ₹27,999 monitor.
+- The order must **belong to the person asking**, so changing the number in
+  the request does not pay for - or reveal - somebody else's order.
+- The amount always comes from **our own database row**, never from the
+  request. A browser allowed to name its own price will.
+
+The signature comparison uses `crypto.timingSafeEqual` rather than `===`, so
+it takes the same time whether the first character is wrong or only the last
+one is.
+
+Six tests cover this, and none of them call Razorpay: the test signs like
+Razorpay would, using a fake secret. That includes a forged signature being
+refused, a genuine signature being refused when replayed onto a different
+order, and a double submit being treated as a double click rather than an
+error.
+
 ## Layout
 
 ```
@@ -165,7 +216,9 @@ src/
   schema.pg.sql        the same tables for PostgreSQL
   seed.js              loads data/products.json, creates the owner and demo accounts
   auth.js              hashing, login cookie, requireAuth / requireOwner
-  routes/              auth, products, cart, orders, admin
+  payments.js          Razorpay: create a payment order, verify a signature
+  rate-limit.js        slows down password guessing
+  routes/              auth, products, cart, orders, admin, payments
 public/                the pages the browser loads
 scripts/make-images.js draws the 48 product illustrations
 data/products.json     the catalogue
@@ -198,6 +251,9 @@ DEPLOY.md              step by step, start to finish
 | GET | `/api/admin/products` | owner |
 | PATCH | `/api/admin/products/:id/stock` | owner |
 | GET | `/api/admin/orders` | owner |
+| GET | `/api/payments/config` | anyone |
+| POST | `/api/payments/orders/:id` | logged in, own orders only |
+| POST | `/api/payments/verify` | logged in, own orders only |
 
 ## Product images
 
@@ -213,11 +269,10 @@ All 48 come to 292 KB, less than a single photograph.
 
 ## Not done yet
 
-- **Payment.** Orders are recorded as `pending`. The `status` column is already
-  there so a gateway can flip it to `paid` later without changing anything
-  else. Card details would go straight from the browser to the gateway - this
-  server would never see them.
-- **Deployment.** The app is ready - PostgreSQL support, a Dockerfile, a
-  Render blueprint, and it creates and fills its own database on first boot.
-  What is left needs accounts in a real person's name. See
-  [DEPLOY.md](DEPLOY.md).
+- **Webhooks.** Payment is confirmed by the browser reporting back. If someone
+  closes the tab at exactly the wrong moment, the money is taken but the order
+  stays `pending`. A real shop also listens to Razorpay's webhook, which
+  arrives server to server and does not care about the browser. The signature
+  checking is the same; it is the delivery that differs.
+- **Refunds and cancellation.** `cancelled` is an allowed status but nothing
+  sets it.

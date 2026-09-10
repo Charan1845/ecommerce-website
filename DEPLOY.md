@@ -37,7 +37,7 @@ Worth doing, and it takes a minute:
 DATABASE_URL="your-connection-string" npm test
 ```
 
-The same 19 tests now run against real PostgreSQL. This is the more meaningful
+The same 25 tests now run against real PostgreSQL. This is the more meaningful
 run: on SQLite in one process Node handles the two racing checkouts one after
 another, but PostgreSQL executes them genuinely in parallel. If the atomic
 `UPDATE` were wrong, this is where it would show.
@@ -130,6 +130,31 @@ in 2027, so plan for the expiry date or use it only for experimenting.
 | `DEMO_LOGIN` | Optional | `off` removes the demo button entirely. |
 | `SEED_ON_BOOT` | Optional | `off` stops the first-boot catalogue load. |
 | `PG_SSL_NO_VERIFY` | Rarely | `1` if your provider uses a self-signed certificate. Neon and Supabase do not. |
+| `RAZORPAY_KEY_ID` | Optional | Test key from Razorpay. Without it, no Pay button. |
+| `RAZORPAY_KEY_SECRET` | Optional | The matching secret. Never goes to the browser. |
+
+## Switching payments on
+
+Payments are off until both Razorpay keys are set, and the shop works fine
+without them - orders simply stay `pending`.
+
+To turn them on:
+
+1. Sign up at [razorpay.com](https://razorpay.com). No company details are
+   needed to use test mode.
+2. Make sure the dashboard is in **Test Mode** - there is a toggle, and it
+   matters. A live key moves real money.
+3. **Settings -> API Keys -> Generate Test Key.** The id starts `rzp_test_`.
+   If it starts `rzp_live_`, you are in the wrong mode.
+4. Put both values in `.env` locally, and in Render's environment settings for
+   the deployed site.
+
+The app checks the prefix and tells the visitor when it is in test mode, so
+nobody thinks they are being charged.
+
+**Test cards** come from Razorpay's own documentation - card
+`4111 1111 1111 1111`, any future expiry, any CVV. No money moves at any
+point, and no real card should ever be typed into a test-mode shop.
 
 ## After it is live
 

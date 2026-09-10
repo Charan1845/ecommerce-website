@@ -21,6 +21,7 @@ process.env.JWT_SECRET = 'test-only-secret';
 
 const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
 
 const { applySchema, get, all, run, close } = require('../src/db');
 const { seedProducts, seedDemo } = require('../src/seed');
@@ -388,6 +389,168 @@ test('a correct password still works after a couple of typos', async () => {
   assert.equal(ok.status, 200, 'the real password must still be accepted');
 
   resetRateLimits();
+});
+
+/* ---------------------------------------------------------------------- */
+/* paying                                                                   */
+/* ---------------------------------------------------------------------- */
+
+const TEST_SECRET = 'test_secret_not_a_real_razorpay_key';
+
+/** Sign the way Razorpay would, so these tests never call their API. */
+const signLikeRazorpay = (razorpayOrderId, paymentId, secret = TEST_SECRET) =>
+  crypto.createHmac('sha256', secret).update(razorpayOrderId + '|' + paymentId).digest('hex');
+
+/** Turn payments on for one test, and always turn them back off. */
+async function withPayments(fn) {
+  process.env.RAZORPAY_KEY_ID = 'rzp_test_fake_key_id';
+  process.env.RAZORPAY_KEY_SECRET = TEST_SECRET;
+  try {
+    return await fn();
+  } finally {
+    delete process.env.RAZORPAY_KEY_ID;
+    delete process.env.RAZORPAY_KEY_SECRET;
+  }
+}
+
+/** A customer with one pending order, ready to be paid for. */
+async function customerWithOrder(username, productId) {
+  await run('UPDATE products SET stock = 5 WHERE id = ?', [productId]);
+  const customer = await newCustomer(username);
+  await customer.call('POST', '/api/cart', { product_id: productId, quantity: 1 });
+  const placed = await customer.call('POST', '/api/orders', SHIPPING);
+  assert.equal(placed.status, 201);
+  return { customer, orderId: placed.body.order.id };
+}
+
+test('with no keys configured, paying is simply not offered', async () => {
+  const config = await (await fetch(BASE + '/api/payments/config')).json();
+  assert.equal(config.enabled, false);
+  assert.equal(config.key_id, null, 'no key should be handed out when disabled');
+
+  const { customer, orderId } = await customerWithOrder('olive_nopay', 30);
+  const start = await customer.call('POST', '/api/payments/orders/' + orderId);
+  assert.equal(start.status, 503);
+});
+
+test('the public key is shared but the secret never is', async () => {
+  await withPayments(async () => {
+    const config = await (await fetch(BASE + '/api/payments/config')).json();
+    assert.equal(config.enabled, true);
+    assert.equal(config.test_mode, true, 'an rzp_test_ key must be reported as test mode');
+    assert.equal(config.key_id, 'rzp_test_fake_key_id');
+    assert.ok(!JSON.stringify(config).includes(TEST_SECRET), 'the secret must never reach the browser');
+  });
+});
+
+test('a real Razorpay signature is accepted and a forged one is not', async () => {
+  await withPayments(async () => {
+    const { customer, orderId } = await customerWithOrder('peter_pay', 31);
+
+    // Stand in for the call to Razorpay: pretend they created this order.
+    const rzpOrderId = 'order_TESTfake123';
+    await run('UPDATE orders SET razorpay_order_id = ? WHERE id = ?', [rzpOrderId, orderId]);
+
+    const forged = await customer.call('POST', '/api/payments/verify', {
+      order_id: orderId,
+      razorpay_order_id: rzpOrderId,
+      razorpay_payment_id: 'pay_TESTfake123',
+      razorpay_signature: 'nonsense',
+    });
+    assert.equal(forged.status, 400, 'an unsigned claim of payment must be refused');
+
+    const stillPending = await get('SELECT status FROM orders WHERE id = ?', [orderId]);
+    assert.equal(stillPending.status, 'pending', 'a forged payment must not mark it paid');
+
+    const genuine = await customer.call('POST', '/api/payments/verify', {
+      order_id: orderId,
+      razorpay_order_id: rzpOrderId,
+      razorpay_payment_id: 'pay_TESTfake123',
+      razorpay_signature: signLikeRazorpay(rzpOrderId, 'pay_TESTfake123'),
+    });
+    assert.equal(genuine.status, 200);
+    assert.equal(genuine.body.status, 'paid');
+
+    const paid = await get('SELECT status, razorpay_payment_id, paid_at FROM orders WHERE id = ?', [orderId]);
+    assert.equal(paid.status, 'paid');
+    assert.equal(paid.razorpay_payment_id, 'pay_TESTfake123');
+    assert.ok(paid.paid_at, 'paid_at should be recorded');
+  });
+});
+
+test('a genuine signature from a different order cannot be reused', async () => {
+  await withPayments(async () => {
+    // A cheap order that really was paid for.
+    const cheap = await customerWithOrder('quinn_cheap', 17);
+    const cheapRzp = 'order_TESTcheap';
+    await run('UPDATE orders SET razorpay_order_id = ? WHERE id = ?', [cheapRzp, cheap.orderId]);
+    const paymentId = 'pay_TESTcheap';
+    const realSignature = signLikeRazorpay(cheapRzp, paymentId);
+
+    await cheap.customer.call('POST', '/api/payments/verify', {
+      order_id: cheap.orderId,
+      razorpay_order_id: cheapRzp,
+      razorpay_payment_id: paymentId,
+      razorpay_signature: realSignature,
+    });
+
+    // Now try to spend that same genuine signature on an expensive order.
+    const pricey = await customerWithOrder('quinn_pricey', 36);
+    await run('UPDATE orders SET razorpay_order_id = ? WHERE id = ?', ['order_TESTpricey', pricey.orderId]);
+
+    const replay = await pricey.customer.call('POST', '/api/payments/verify', {
+      order_id: pricey.orderId,
+      razorpay_order_id: cheapRzp,
+      razorpay_payment_id: paymentId,
+      razorpay_signature: realSignature,
+    });
+
+    assert.equal(replay.status, 400, 'a signature belonging to another order must be refused');
+    const still = await get('SELECT status FROM orders WHERE id = ?', [pricey.orderId]);
+    assert.equal(still.status, 'pending');
+  });
+});
+
+test('you cannot start paying for another customer order', async () => {
+  await withPayments(async () => {
+    const mine = await customerWithOrder('rita_owner', 20);
+    const stranger = await newCustomer('sam_stranger');
+
+    const attempt = await stranger.call('POST', '/api/payments/orders/' + mine.orderId);
+    assert.equal(attempt.status, 404, 'another customer order must not even be visible');
+  });
+});
+
+test('an order that is already paid cannot be paid again', async () => {
+  await withPayments(async () => {
+    const { customer, orderId } = await customerWithOrder('tina_twice', 23);
+    const rzpOrderId = 'order_TESTtwice';
+    await run('UPDATE orders SET razorpay_order_id = ? WHERE id = ?', [rzpOrderId, orderId]);
+
+    const signature = signLikeRazorpay(rzpOrderId, 'pay_TESTtwice');
+
+    const first = await customer.call('POST', '/api/payments/verify', {
+      order_id: orderId,
+      razorpay_order_id: rzpOrderId,
+      razorpay_payment_id: 'pay_TESTtwice',
+      razorpay_signature: signature,
+    });
+    assert.equal(first.status, 200);
+
+    // Submitting the same success twice is a double click, not an attack.
+    const again = await customer.call('POST', '/api/payments/verify', {
+      order_id: orderId,
+      razorpay_order_id: rzpOrderId,
+      razorpay_payment_id: 'pay_TESTtwice',
+      razorpay_signature: signature,
+    });
+    assert.equal(again.status, 200);
+    assert.equal(again.body.already, true);
+
+    // But starting a fresh payment for it must not be allowed.
+    const restart = await customer.call('POST', '/api/payments/orders/' + orderId);
+    assert.equal(restart.status, 409);
+  });
 });
 
 test('checkout refuses a bad pincode', async () => {
