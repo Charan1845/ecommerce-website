@@ -699,6 +699,38 @@ test('the simulator disappears entirely when Razorpay keys are set', async () =>
   });
 });
 
+test('the UPI QR is shaped like a real one and cannot take money', async () => {
+  await withSandbox(async () => {
+    const { customer, orderId } = await customerWithOrder('zara_upi', 25);
+
+    const start = await customer.call('POST', '/api/payments/orders/' + orderId);
+    assert.equal(start.status, 200);
+
+    const upi = start.body.upi;
+    assert.ok(upi, 'the simulator should offer a UPI QR');
+    assert.ok(upi.svg.startsWith('<svg'), 'the QR should come back as inline SVG');
+
+    // Shaped like the real thing: same scheme, same parameters, amount in
+    // rupees because that is what the UPI spec wants.
+    assert.match(upi.uri, /^upi:\/\/pay\?/);
+    assert.match(upi.uri, /am=8990\.00/, 'Rs 8,990 should appear as rupees, not paise');
+    assert.match(upi.uri, /cu=INR/);
+
+    // And unable to take a rupee from anyone. .invalid is reserved by IANA
+    // and can never be registered, so there is no account behind it.
+    // .invalid is reserved by IANA and can never be registered, so there is
+    // no account behind this and there cannot be one.
+    assert.match(upi.payee, /@simulation\.invalid$/, 'the payee must be permanently unregistrable');
+
+    // And it must not read like a real handle - @ybl, @paytm, @okhdfcbank and
+    // the rest all belong to somebody.
+    assert.ok(
+      !/@(ok\w+|ybl|paytm|apl|axl|ibl|upi)$/.test(upi.payee),
+      'the payee must not look like a real UPI handle'
+    );
+  });
+});
+
 test('checkout refuses a bad pincode', async () => {
   await run('UPDATE products SET stock = 5 WHERE id = 24');
 

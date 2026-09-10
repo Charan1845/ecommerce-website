@@ -97,10 +97,25 @@ function orderCard(order) {
  * is - somebody landing on this page should never be in doubt about whether
  * they are about to be charged.
  */
-function openSandboxWindow({ amountPaise, orderId }) {
+function openSandboxWindow({ amountPaise, orderId, upi }) {
   return new Promise((resolve) => {
     const overlay = document.createElement('div');
     overlay.className = 'sandbox-overlay';
+
+    const upiPanel = upi
+      ? `
+        <div class="sandbox-panel" data-panel="upi" hidden>
+          <div class="sandbox-qr">${upi.svg}</div>
+          <p class="sandbox-payee">${esc(upi.payee)}</p>
+          <p class="sandbox-explain">
+            This QR scans like any other UPI code, and it cannot take money from
+            anyone. The payee address ends in <code>.invalid</code> - a domain
+            permanently reserved so that it can never belong to a real account.
+            Scan it and your UPI app will simply find nobody there.
+          </p>
+        </div>`
+      : '';
+
     overlay.innerHTML = `
       <div class="sandbox-window" role="dialog" aria-modal="true" aria-label="Simulated payment">
         <div class="sandbox-banner">Simulated payment &middot; not a real gateway</div>
@@ -109,30 +124,40 @@ function openSandboxWindow({ amountPaise, orderId }) {
           <div class="sandbox-amount">${rupees(amountPaise)}</div>
           <p class="sandbox-for">DevGear &middot; Order #${orderId}</p>
 
-          <label class="sandbox-label">Card number</label>
-          <input class="sandbox-input" value="4111 1111 1111 1111" disabled>
+          ${upi ? `
+          <div class="sandbox-tabs">
+            <button type="button" class="active" data-tab="card">Card</button>
+            <button type="button" data-tab="upi">UPI / QR</button>
+          </div>` : ''}
 
-          <div class="sandbox-split">
-            <div>
-              <label class="sandbox-label">Expiry</label>
-              <input class="sandbox-input" value="12 / 30" disabled>
+          <div class="sandbox-panel" data-panel="card">
+            <label class="sandbox-label">Card number</label>
+            <input class="sandbox-input" value="4111 1111 1111 1111" disabled>
+
+            <div class="sandbox-split">
+              <div>
+                <label class="sandbox-label">Expiry</label>
+                <input class="sandbox-input" value="12 / 30" disabled>
+              </div>
+              <div>
+                <label class="sandbox-label">CVV</label>
+                <input class="sandbox-input" value="123" disabled>
+              </div>
             </div>
-            <div>
-              <label class="sandbox-label">CVV</label>
-              <input class="sandbox-input" value="123" disabled>
-            </div>
+
+            <p class="sandbox-explain">
+              These fields are a drawing. Nothing is typed, nothing is sent to a
+              bank, and no money exists. What is real is what happens next: the
+              gateway signs its answer, and the shop refuses it unless the
+              signature checks out.
+            </p>
           </div>
 
-          <p class="sandbox-explain">
-            These fields are a drawing. Nothing is typed, nothing is sent to a
-            bank, and no money exists. What is real is what happens next: the
-            gateway signs its answer, and the shop refuses it unless the
-            signature checks out.
-          </p>
+          ${upiPanel}
 
           <button class="btn" id="sandbox-pay" style="width:100%">Pay ${rupees(amountPaise)}</button>
           <button class="btn secondary" id="sandbox-fail" style="width:100%; margin-top:8px">
-            Simulate a declined card
+            Simulate a declined payment
           </button>
           <button class="btn danger" id="sandbox-cancel" style="width:100%; margin-top:4px">Cancel</button>
         </div>
@@ -147,6 +172,24 @@ function openSandboxWindow({ amountPaise, orderId }) {
     function onKey(e) {
       if (e.key === 'Escape') close('cancel');
     }
+
+    // Card / UPI switching. Both end at the same Pay button, because the
+    // method a customer chooses does not change how the shop verifies the
+    // answer it gets back.
+    overlay.querySelectorAll('[data-tab]').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const wanted = tab.dataset.tab;
+        overlay.querySelectorAll('[data-tab]').forEach((t) => {
+          t.classList.toggle('active', t === tab);
+        });
+        overlay.querySelectorAll('[data-panel]').forEach((panel) => {
+          panel.hidden = panel.dataset.panel !== wanted;
+        });
+        const payButton = overlay.querySelector('#sandbox-pay');
+        payButton.textContent =
+          wanted === 'upi' ? 'I have paid' : `Pay ${rupees(amountPaise)}`;
+      });
+    });
 
     overlay.querySelector('#sandbox-pay').addEventListener('click', () => close('success'));
     overlay.querySelector('#sandbox-fail').addEventListener('click', () => close('failure'));
@@ -194,6 +237,7 @@ async function payForOrder(orderId, button) {
       const outcome = await openSandboxWindow({
         amountPaise: start.amount_paise,
         orderId: start.order_id,
+        upi: start.upi,
       });
 
       if (outcome === 'cancel') {

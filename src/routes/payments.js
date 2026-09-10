@@ -14,6 +14,7 @@ const express = require('express');
 const { get, run } = require('../db');
 const { requireAuth } = require('../auth');
 const sandboxGateway = require('../sandbox-gateway');
+const { upiQrSvg } = require('../upi');
 const {
   provider,
   isEnabled,
@@ -83,7 +84,7 @@ router.post('/orders/:id', async (req, res, next) => {
 
     await run('UPDATE orders SET razorpay_order_id = ? WHERE id = ?', [created.id, order.id]);
 
-    return res.json({
+    const response = {
       provider: provider(),
       simulated: isSimulated(),
       key_id: provider() === 'razorpay' ? keyId() : null,
@@ -96,7 +97,18 @@ router.post('/orders/:id', async (req, res, next) => {
         email: req.user.email,
         contact: order.shipping_phone,
       },
-    });
+    };
+
+    // The simulator also offers a UPI QR, because that is how most people in
+    // India actually pay. It is deliberately not payable - see src/upi.js.
+    if (provider() === 'sandbox') {
+      response.upi = await upiQrSvg({
+        amountPaise: order.total_paise,
+        orderId: order.id,
+      });
+    }
+
+    return res.json(response);
   } catch (err) {
     return next(err);
   }
