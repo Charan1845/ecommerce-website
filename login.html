@@ -8,7 +8,7 @@
 </head>
 <body>
     <main class="login-page">
-        <h1>Welcome to the world of Electronics</h1>
+        <h1>Welcome to the World of Electronics</h1>
 
         <div class="form-switcher">
             <button type="button" onclick="showLogin()">Login</button>
@@ -19,8 +19,8 @@
     <form action="login.php" method="post">
         <input type="hidden" name="form_type" id="form_type" value="login">
 
-        <label for="username">Username or Email</label><br>
-        <input type="text" placeholder="Username or email" name="username" id="username" required><br>
+        <label for="username">Username</label><br>
+        <input type="text" placeholder="Username" name="username" id="username" required><br>
 
         <label for="password">Password</label><br>
         <input type="password" placeholder="Password" name="password" id="password" required><br>
@@ -31,9 +31,6 @@
 
             <label for="phone_number">Phone Number</label><br>
             <input type="tel" placeholder="Phone number" name="phone_number" id="phone_number"><br>
-
-            <label for="email">Email</label><br>
-            <input type="email" placeholder="Email" name="email" id="email"><br>
 
             <label for="state">State</label><br>
             <select name="state" id="state">
@@ -69,7 +66,7 @@
         }
 
         function setSignupRequired(isRequired) {
-            ['confirm_password', 'phone_number', 'email', 'state', 'terms'].forEach(function (id) {
+            ['confirm_password', 'phone_number', 'state', 'terms'].forEach(function (id) {
                 document.getElementById(id).required = isRequired;
             });
         }
