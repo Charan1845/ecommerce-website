@@ -1,0 +1,28 @@
+# Render blueprint. With this file in the repository, Render can create the
+# web service without you filling in a form.
+#
+# The database is deliberately NOT defined here. Render's free PostgreSQL
+# expires after a fixed window; a portfolio link that dies in the middle of
+# placement season is worse than no link. Use a provider whose free tier does
+# not expire and paste its connection string into DATABASE_URL below.
+
+services:
+  - type: web
+    name: devgear
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: node server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Generated once by Render and kept. Signs the login cookie.
+      - key: JWT_SECRET
+        generateValue: true
+      # Paste your PostgreSQL connection string in the Render dashboard.
+      - key: DATABASE_URL
+        sync: false
+      # Chooses the owner password on first boot instead of a random one.
+      - key: OWNER_PASSWORD
+        sync: false

@@ -1,8 +1,8 @@
 # DevGear
 
 A small online shop for computer accessories - keyboards, mice, headsets and
-monitors. Express REST API, plain HTML/CSS/JavaScript front end, SQLite while
-developing.
+monitors. Express REST API, plain HTML/CSS/JavaScript front end, SQLite on a
+laptop and PostgreSQL when deployed.
 
 It is a demo store. No payment is taken and no order is fulfilled.
 
@@ -51,6 +51,27 @@ The demo account is deliberately a plain customer. Its password is public, so
 it must not be able to touch stock or read anyone else's orders - there are
 tests for both. Deploy with `DEMO_LOGIN=off` and the button disappears.
 
+## Two databases, one set of queries
+
+With no `DATABASE_URL` the app uses SQLite, which ships inside Node 24 - so
+`npm install && npm run dev` works with nothing installed and the tests run in
+seconds. Set `DATABASE_URL` and it uses PostgreSQL instead, which is what the
+deployed site needs: free hosting wipes its disk on every restart, and a
+SQLite file would take every account and order with it.
+
+Only `src/db.js` knows which one is in use. Queries are written once with `?`
+placeholders and the PostgreSQL adapter rewrites them to `$1, $2`; the routes
+never find out. Both helpers are async, because a network database cannot be
+anything else.
+
+To run the tests against real PostgreSQL:
+
+```bash
+DATABASE_URL="postgresql://..." npm test
+```
+
+That run means more than the SQLite one - see the honest limit below.
+
 ## The part worth reading
 
 Most shopping-cart projects sell the last item in stock more than once. It is
@@ -88,11 +109,14 @@ puts back any stock it had already taken. A test covers that case too.
 that exactly one succeeds, that stock lands on zero rather than minus one, and
 that only one order exists afterwards.
 
-**An honest limit:** those two requests are handled by one Node process
-holding one SQLite connection, so Node runs them one after the other. The test
-proves the logic is right; it does not reproduce true parallel execution. The
-single atomic `UPDATE` is what makes it correct once it is on PostgreSQL with
-several workers, where requests really do overlap.
+**An honest limit on the SQLite run:** those two requests are handled by one
+Node process holding one SQLite connection, so Node runs them one after the
+other. That run proves the logic is right; it does not reproduce true parallel
+execution.
+
+Run the same tests with `DATABASE_URL` pointed at PostgreSQL and they do
+overlap for real, because the two checkouts are on separate connections. That
+is the run worth quoting.
 
 ## Two rules about copying data
 
@@ -129,12 +153,17 @@ src/
   app.js               builds the Express app (kept separate so tests can start their own)
   db.js                the database connection and the query helpers
   schema.sql           the tables
-  seed.js              loads data/products.json, creates the owner
+  schema.pg.sql        the same tables for PostgreSQL
+  seed.js              loads data/products.json, creates the owner and demo accounts
   auth.js              hashing, login cookie, requireAuth / requireOwner
   routes/              auth, products, cart, orders, admin
 public/                the pages the browser loads
+scripts/make-images.js draws the 48 product illustrations
 data/products.json     the catalogue
 tests/                 checkout, stock, pricing, access control
+Dockerfile             for Cloud Run, Container Apps, anything container-shaped
+render.yaml            so Render can create the service without a form
+DEPLOY.md              step by step, start to finish
 ```
 
 ## API
@@ -179,4 +208,7 @@ All 48 come to 292 KB, less than a single photograph.
   there so a gateway can flip it to `paid` later without changing anything
   else. Card details would go straight from the browser to the gateway - this
   server would never see them.
-- **Deployment.** Still runs locally only.
+- **Deployment.** The app is ready - PostgreSQL support, a Dockerfile, a
+  Render blueprint, and it creates and fills its own database on first boot.
+  What is left needs accounts in a real person's name. See
+  [DEPLOY.md](DEPLOY.md).
