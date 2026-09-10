@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My orders - DevGear</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="logo" href="/">Dev<span>Gear</span></a>
+      <nav id="nav"></nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <h1>My orders</h1>
+    <p class="subtitle" id="sub"></p>
+
+    <div id="notice" class="notice" hidden></div>
+
+    <div id="empty" class="empty" hidden>
+      <h2>No orders yet</h2>
+      <p>When you place an order it will show up here. <a href="/">Start shopping</a>.</p>
+    </div>
+
+    <div id="orders"></div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <strong>Demo store - no real orders are fulfilled and no payment is taken.</strong>
+      Built as a portfolio project.
+    </div>
+  </footer>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/orders.js"></script>
+</body>
+</html>

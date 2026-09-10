@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your cart - DevGear</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="logo" href="/">Dev<span>Gear</span></a>
+      <nav id="nav"></nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <h1>Your cart</h1>
+    <p class="subtitle" id="sub"></p>
+
+    <div id="notice" class="notice" hidden></div>
+
+    <div id="empty" class="empty" hidden>
+      <h2>Your cart is empty</h2>
+      <p>Nothing here yet. <a href="/">Have a look at the shop</a>.</p>
+    </div>
+
+    <div class="two-col" id="layout" hidden>
+      <section>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th class="num">Price</th>
+                <th>Qty</th>
+                <th class="num">Total</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="lines"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <aside class="panel">
+        <h2>Delivery details</h2>
+        <form id="checkout" novalidate>
+          <div class="field">
+            <label for="shipping_name">Full name</label>
+            <input type="text" id="shipping_name" required>
+            <span class="err" id="err-shipping_name"></span>
+          </div>
+
+          <div class="field">
+            <label for="shipping_phone">Phone number</label>
+            <input type="tel" id="shipping_phone" inputmode="numeric" maxlength="10" placeholder="9848012345" required>
+            <span class="err" id="err-shipping_phone"></span>
+          </div>
+
+          <div class="field">
+            <label for="shipping_address">Address</label>
+            <textarea id="shipping_address" rows="3" required></textarea>
+            <span class="err" id="err-shipping_address"></span>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="shipping_state">State</label>
+              <select id="shipping_state" required>
+                <option value="" selected disabled>Select</option>
+                <option>Andhra Pradesh</option>
+                <option>Karnataka</option>
+                <option>Kerala</option>
+                <option>Maharashtra</option>
+                <option>Tamil Nadu</option>
+                <option>Telangana</option>
+              </select>
+              <span class="err" id="err-shipping_state"></span>
+            </div>
+            <div class="field">
+              <label for="shipping_pincode">Pincode</label>
+              <input type="text" id="shipping_pincode" inputmode="numeric" maxlength="6" placeholder="502313" required>
+              <span class="err" id="err-shipping_pincode"></span>
+            </div>
+          </div>
+
+          <div class="totals"><span>Items</span><span id="item-count">0</span></div>
+          <div class="totals grand"><span>Total</span><span id="total">₹0</span></div>
+
+          <button type="submit" class="btn" id="place" style="width:100%; margin-top:14px">
+            Place order
+          </button>
+          <p class="subtitle" style="font-size:13px; margin:12px 0 0">
+            No payment is taken. The order is recorded as <strong>pending</strong>.
+          </p>
+        </form>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <strong>Demo store - no real orders are fulfilled and no payment is taken.</strong>
+      Built as a portfolio project.
+    </div>
+  </footer>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/cart.js"></script>
+</body>
+</html>

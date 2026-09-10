@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Log in or sign up - DevGear</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="auth-split">
+
+    <!-- Left: the brand panel. The heading is the one from the original
+         version of this page. -->
+    <section class="auth-brand">
+      <svg class="art" viewBox="0 0 600 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <!-- A keyboard, drawn rather than photographed. -->
+        <g transform="translate(40 470) rotate(-9)">
+          <rect x="0" y="0" width="470" height="170" rx="14" fill="#ffffff" opacity="0.30"/>
+        </g>
+        <g transform="translate(40 470) rotate(-9)" fill="#ffffff" opacity="0.6">
+          <rect x="14" y="14" width="30" height="30" rx="5"/>
+          <rect x="50" y="14" width="30" height="30" rx="5"/>
+          <rect x="86" y="14" width="30" height="30" rx="5"/>
+          <rect x="122" y="14" width="30" height="30" rx="5"/>
+          <rect x="158" y="14" width="30" height="30" rx="5"/>
+          <rect x="194" y="14" width="30" height="30" rx="5"/>
+          <rect x="230" y="14" width="30" height="30" rx="5"/>
+          <rect x="266" y="14" width="30" height="30" rx="5"/>
+          <rect x="302" y="14" width="30" height="30" rx="5"/>
+          <rect x="338" y="14" width="30" height="30" rx="5"/>
+          <rect x="374" y="14" width="30" height="30" rx="5"/>
+          <rect x="410" y="14" width="46" height="30" rx="5"/>
+          <rect x="14" y="50" width="30" height="30" rx="5"/>
+          <rect x="50" y="50" width="30" height="30" rx="5"/>
+          <rect x="86" y="50" width="30" height="30" rx="5"/>
+          <rect x="122" y="50" width="30" height="30" rx="5"/>
+          <rect x="158" y="50" width="30" height="30" rx="5"/>
+          <rect x="194" y="50" width="30" height="30" rx="5"/>
+          <rect x="230" y="50" width="30" height="30" rx="5"/>
+          <rect x="266" y="50" width="30" height="30" rx="5"/>
+          <rect x="302" y="50" width="30" height="30" rx="5"/>
+          <rect x="338" y="50" width="30" height="30" rx="5"/>
+          <rect x="374" y="50" width="30" height="30" rx="5"/>
+          <rect x="410" y="50" width="46" height="30" rx="5"/>
+          <rect x="14" y="86" width="30" height="30" rx="5"/>
+          <rect x="50" y="86" width="30" height="30" rx="5"/>
+          <rect x="86" y="86" width="30" height="30" rx="5"/>
+          <rect x="122" y="86" width="30" height="30" rx="5"/>
+          <rect x="158" y="86" width="30" height="30" rx="5"/>
+          <rect x="194" y="86" width="30" height="30" rx="5"/>
+          <rect x="230" y="86" width="30" height="30" rx="5"/>
+          <rect x="266" y="86" width="30" height="30" rx="5"/>
+          <rect x="302" y="86" width="30" height="30" rx="5"/>
+          <rect x="338" y="86" width="30" height="30" rx="5"/>
+          <rect x="374" y="86" width="82" height="30" rx="5"/>
+          <rect x="14" y="122" width="66" height="30" rx="5"/>
+          <rect x="86" y="122" width="30" height="30" rx="5"/>
+          <rect x="122" y="122" width="230" height="30" rx="5"/>
+          <rect x="358" y="122" width="30" height="30" rx="5"/>
+          <rect x="394" y="122" width="62" height="30" rx="5"/>
+        </g>
+        <!-- A mouse. -->
+        <g transform="translate(430 130)" fill="#ffffff" opacity="0.5">
+          <path d="M 60 0 C 12 16, 0 60, 4 104 C 10 150, 110 150, 116 104 C 120 60, 108 16, 60 0 Z"/>
+        </g>
+        <circle cx="120" cy="150" r="90" fill="#ffffff" opacity="0.10"/>
+        <circle cx="520" cy="620" r="130" fill="#ffffff" opacity="0.08"/>
+      </svg>
+
+      <a class="logo" href="/">Dev<span>Gear</span></a>
+
+      <div>
+        <h2>Welcome to the World of Electronics</h2>
+        <p class="tag">
+          Keyboards, mice, headsets and monitors - 48 products, honest stock counts,
+          and a cart that remembers you.
+        </p>
+
+        <ul class="auth-points">
+          <li><span class="tick">✓</span><span>Your cart is saved to your account, not just this browser</span></li>
+          <li><span class="tick">✓</span><span>Every order keeps the price you actually paid</span></li>
+          <li><span class="tick">✓</span><span>Your password is stored as a one-way hash - we cannot read it</span></li>
+        </ul>
+      </div>
+
+      <p class="small">Demo store &middot; no payment is taken and no order is fulfilled.</p>
+    </section>
+
+    <!-- Right: the form. Same fields and the same Login / Sign Up switcher
+         as the original page. -->
+    <section class="auth-form-side">
+      <div class="auth-card">
+        <h1 id="heading">Welcome back</h1>
+        <p class="subtitle" id="sub">Log in to your DevGear account.</p>
+
+        <div id="notice" class="notice" hidden></div>
+
+        <div class="form-switcher">
+          <button type="button" id="tab-login" class="active">Log in</button>
+          <button type="button" id="tab-signup">Sign up</button>
+        </div>
+
+        <form id="form" novalidate>
+          <div class="field">
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" autocomplete="username" required>
+            <span class="err" id="err-username"></span>
+          </div>
+
+          <div class="field" id="field-email" hidden>
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" autocomplete="email"
+                   placeholder="you@example.com">
+            <span class="err" id="err-email"></span>
+          </div>
+
+          <div class="field">
+            <label for="password">Password</label>
+            <div class="pw-wrap">
+              <input type="password" id="password" name="password"
+                     autocomplete="current-password" placeholder="At least 8 characters" required>
+              <button type="button" class="pw-toggle" data-toggle="password">Show</button>
+            </div>
+            <span class="err" id="err-password"></span>
+          </div>
+
+          <div id="signup-details" hidden>
+            <div class="field">
+              <label for="confirm_password">Confirm password</label>
+              <div class="pw-wrap">
+                <input type="password" id="confirm_password" name="confirm_password"
+                       autocomplete="new-password" placeholder="Type it again">
+                <button type="button" class="pw-toggle" data-toggle="confirm_password">Show</button>
+              </div>
+              <span class="err" id="err-confirm_password"></span>
+            </div>
+
+            <div class="field-row">
+              <div class="field">
+                <label for="phone">Phone number</label>
+                <input type="tel" id="phone" name="phone" inputmode="numeric"
+                       maxlength="10" placeholder="9848012345">
+                <span class="err" id="err-phone"></span>
+              </div>
+
+              <div class="field">
+                <label for="state">State</label>
+                <select id="state" name="state">
+                  <option value="" selected disabled>Select a state</option>
+                  <option value="Andhra Pradesh">Andhra Pradesh</option>
+                  <option value="Karnataka">Karnataka</option>
+                  <option value="Kerala">Kerala</option>
+                  <option value="Maharashtra">Maharashtra</option>
+                  <option value="Tamil Nadu">Tamil Nadu</option>
+                  <option value="Telangana">Telangana</option>
+                </select>
+                <span class="err" id="err-state"></span>
+              </div>
+            </div>
+
+            <div class="checkbox-row">
+              <input type="checkbox" id="terms" name="terms">
+              <label for="terms">I agree to the terms and conditions of this demo store.</label>
+            </div>
+            <span class="err" id="err-terms"></span>
+          </div>
+
+          <button type="submit" class="btn" id="submit" style="width:100%">Log in</button>
+        </form>
+
+        <div id="demo-block" hidden>
+          <div class="or-line"><span>or</span></div>
+          <button type="button" class="btn secondary" id="demo-btn" style="width:100%">
+            Look around with the demo account
+          </button>
+          <p class="demo-hint">
+            Signs you in as an ordinary customer, so you can browse, add to a cart
+            and place an order without making an account.
+          </p>
+        </div>
+
+        <p class="auth-foot" id="foot">
+          New to DevGear? <button type="button" id="foot-switch">Create an account</button>
+        </p>
+      </div>
+    </section>
+  </div>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/login.js"></script>
+</body>
+</html>

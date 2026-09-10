@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Owner dashboard - DevGear</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="logo" href="/">Dev<span>Gear</span></a>
+      <nav id="nav"></nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <h1>Owner dashboard</h1>
+    <p class="subtitle">Stock and orders. Only accounts with the owner role can open this page.</p>
+
+    <div id="notice" class="notice" hidden></div>
+
+    <div id="denied" class="empty" hidden>
+      <h2>Not allowed</h2>
+      <p>This page is for the shop owner. <a href="/">Back to the shop</a>.</p>
+    </div>
+
+    <div id="content" hidden>
+      <div class="stats" id="stats"></div>
+
+      <h2>Stock</h2>
+      <p class="subtitle">
+        Change a number and press Save. Setting an item to 1 is how you reset the
+        last-item demo.
+      </p>
+      <div class="table-wrap" style="margin-bottom:40px">
+        <table>
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Brand</th>
+              <th>Category</th>
+              <th class="num">Price</th>
+              <th class="num">Stock</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="products"></tbody>
+        </table>
+      </div>
+
+      <h2>All orders</h2>
+      <div id="orders"></div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <strong>Demo store - no real orders are fulfilled and no payment is taken.</strong>
+      Built as a portfolio project.
+    </div>
+  </footer>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

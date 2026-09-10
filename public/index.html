@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevGear - Keyboards, Mouse, Headsets and Monitors</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="logo" href="/">Dev<span>Gear</span></a>
+      <nav id="nav"></nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <h1>Desk and computer gear</h1>
+    <p class="subtitle" id="count">Loading the catalogue…</p>
+
+    <div id="notice" class="notice" hidden></div>
+
+    <div class="toolbar">
+      <div class="chips" id="categories"></div>
+      <div class="spacer"></div>
+      <input type="search" id="search" placeholder="Search products…" aria-label="Search products">
+      <select id="sort" aria-label="Sort products">
+        <option value="featured">Sort: featured</option>
+        <option value="price-low">Price: low to high</option>
+        <option value="price-high">Price: high to low</option>
+        <option value="name">Name: A to Z</option>
+      </select>
+    </div>
+
+    <div class="grid" id="grid"></div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <strong>Demo store - no real orders are fulfilled and no payment is taken.</strong>
+      Built as a portfolio project.
+    </div>
+  </footer>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/shop.js"></script>
+</body>
+</html>
