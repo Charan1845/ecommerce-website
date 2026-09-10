@@ -1,20 +1,38 @@
 /**
- * Downloads a product photo for every item in data/products.json.
+ * Downloads a product photograph for every item in data/products.json.
  *
- * Run with:  npm run photos
+ * Run with:  npm run photos      (needs PEXELS_API_KEY in .env)
  *
- * Photographs come from Wikimedia Commons, which is searchable without an API
- * key and where every file carries its licence in machine-readable form. Only
- * licences that permit reuse are accepted, and the photographer and licence
- * for each file are written to data/photo-credits.json so the site can credit
- * them - which most of these licences require, and which is the right thing to
- * do regardless.
+ * Pexels is a stock photography library. Its licence allows free use,
+ * including commercially, without attribution - but the photographers are
+ * credited anyway, in data/photo-credits.json and on the product page,
+ * because someone took these pictures.
  *
- * These are photographs of the general kind of thing each product is: a
- * mechanical keyboard, a gaming mouse. They are not photographs of DevGear
- * products, because DevGear is not a real company and has never manufactured
- * anything. The product page says so.
+ * -------------------------------------------------------------------------
+ * WHAT THESE PHOTOGRAPHS ARE, AND ARE NOT
+ *
+ * They are photographs of the general kind of thing each product is: a
+ * mechanical keyboard, a pair of over-ear headphones. They are NOT
+ * photographs of DevGear products, because DevGear does not exist and has
+ * never manufactured anything.
+ *
+ * That is why the catalogue stopped using real brand names. A stock photo of
+ * some keyboard sold as a "Keychron K2" is a lie about a real company's
+ * product. A stock photo of some keyboard sold as a "DevGear Forge 84", in a
+ * shop that says on every page that it is a demo, is a placeholder.
+ *
+ * The filter below rejects photographs whose description names a real
+ * manufacturer, for the same reason: a recognisable Razer mouse sold as a
+ * DevGear one puts the problem straight back.
+ *
+ * An earlier version of this script used Wikimedia Commons, which needs no
+ * API key. It was abandoned: Commons is an archive rather than a catalogue,
+ * and it returned ceramic mouse ornaments, a cat in front of a monitor,
+ * broken CRTs and macro shots of LCD pixels. Kept in the git history.
+ * -------------------------------------------------------------------------
  */
+
+require('dotenv').config();
 
 const fs = require('node:fs');
 const path = require('node:path');
@@ -23,133 +41,97 @@ const CATALOGUE = path.join(__dirname, '..', 'data', 'products.json');
 const OUT_DIR = path.join(__dirname, '..', 'public', 'images', 'products');
 const CREDITS = path.join(__dirname, '..', 'data', 'photo-credits.json');
 
-// Wikimedia asks that tools identify themselves and say who to contact.
-const USER_AGENT =
-  'DevGear-portfolio-project/1.0 (student project; https://github.com/Charan1845/ecommerce-website)';
+const API = 'https://api.pexels.com/v1/search';
 
-/** Licences that allow reuse. Anything else is skipped, whatever it looks like. */
-const ALLOWED_LICENCES = [
-  /^cc0/i,
-  /^public domain/i,
-  /^cc by(-sa)? [1-4]/i,
-  /^cc-by(-sa)?-[1-4]/i,
-];
-
-/** What to search for, per category. Several queries so there is a choice. */
+/** Searches per category. Several, so there is a choice to filter down from. */
 const SEARCHES = {
   Keyboards: [
     'mechanical keyboard',
-    'computer keyboard backlit',
-    'wireless computer keyboard',
-    'gaming keyboard rgb',
-    'keyboard keycaps',
-    'keyboard desk setup',
+    'computer keyboard',
+    'keyboard rgb backlit',
+    'keyboard closeup desk',
   ],
-  Mouse: [
-    'computer mouse peripheral',
-    'gaming mouse',
-    'wireless computer mouse',
-    'optical computer mouse',
-    'mouse pad desk',
-  ],
-  Headsets: [
-    'headphones',
-    'gaming headset microphone',
-    'wireless earbuds',
-    'over-ear headphones',
-    'headphones desk',
-  ],
-  Monitors: [
-    'computer monitor',
-    'lcd monitor display',
-    'desktop computer monitor',
-    'widescreen monitor',
-    'monitor desk setup',
-  ],
+  Mouse: ['computer mouse', 'gaming mouse', 'wireless mouse desk', 'mouse and mousepad'],
+  Headsets: ['headphones', 'gaming headset', 'wireless earbuds', 'over ear headphones'],
+  Monitors: ['computer monitor', 'desktop monitor screen', 'monitor desk setup', 'pc monitor'],
 };
 
 /**
- * Titles that are not a usable product shot.
+ * Photographs showing identifiable branded hardware.
  *
- * The first pass of this script came back with ceramic mouse ornaments, real
- * field mice, a cat sitting in front of a monitor, two broken CRTs and a
- * monitor in the snow. Searching for "mouse" gets you the animal, and Commons
- * is a photo archive rather than a catalogue.
- */
-const REJECT_SUBJECT =
-  /(aisle|store|shop|shelf|museum|layout|diagram|map|logo|icon|person|man |woman |child|cat[ -]|dog|mice |mouse ornament|majolica|field|snow|water|broken|damaged|repair|dump|waste|recycl|vintage|retro|1980|1990|amiga|commodore|atari|typewriter|cycling|street|remix|transparent|unsplash)/i;
-
-/**
- * Photographs of identifiable branded hardware.
- *
- * A photo of a real Razer mouse sold as a DevGear product is the same
- * misrepresentation as a DevGear photo sold as a Razer one - which is the
- * whole reason this catalogue stopped using real brand names. If the brand is
- * visible in the title, it is visible in the picture.
+ * If the description names the manufacturer, the logo is usually in shot.
  */
 const REJECT_BRAND =
-  /(razer|logitech|bose|jbl|jlab|eizo|kensington|samsung|apple|imac|macbook|mac |dell|hp |asus|acer|msi|benq|lg |sony|corsair|keychron|redragon|steelseries|hyperx|sennheiser|audioquest|anker|xiaomi|huawei|lenovo|microsoft|ibm|nec|philips|beyerdynamic|akg|shure|zebronics|cooler master|ducky|varmilo|leopold)/i;
+  /(razer|logitech|bose|jbl|jlab|eizo|kensington|samsung|apple|imac|macbook|\bmac\b|dell|\bhp\b|asus|acer|msi|benq|\blg\b|sony|corsair|keychron|redragon|steelseries|hyperx|sennheiser|audioquest|anker|xiaomi|huawei|lenovo|microsoft|ibm|\bnec\b|philips|beyerdynamic|\bakg\b|shure|zebronics|cooler master|ducky|varmilo|leopold|beats|airpods|galaxy|iphone)/i;
 
-const REJECT = new RegExp(`${REJECT_SUBJECT.source}|${REJECT_BRAND.source}`, 'i');
+/** Photographs that are of a person, or of something else entirely. */
+const REJECT_SUBJECT =
+  /(\bman\b|\bwoman\b|\bboy\b|\bgirl\b|people|person|hand holding|portrait|child|\bcat\b|\bdog\b|animal|mouse trap|field mouse|rodent|broken|trash|garbage|waste|abstract|texture|wallpaper)/i;
 
-const stripHtml = (s) => String(s || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
-
-async function search(query) {
-  const url =
-    'https://commons.wikimedia.org/w/api.php?' +
-    new URLSearchParams({
-      action: 'query',
-      format: 'json',
-      generator: 'search',
-      gsrsearch: `filetype:bitmap ${query}`,
-      gsrlimit: '25',
-      gsrnamespace: '6',
-      prop: 'imageinfo',
-      iiprop: 'url|extmetadata|size|mime',
-      iiurlwidth: '900',
-    });
-
-  const res = await fetch(url, { headers: { 'user-agent': USER_AGENT } });
-  if (!res.ok) throw new Error(`Commons search failed: ${res.status}`);
-
-  const body = await res.json();
-  return Object.values(body.query?.pages || {});
+function apiKey() {
+  const key = process.env.PEXELS_API_KEY;
+  if (!key) {
+    console.error(
+      [
+        'PEXELS_API_KEY is not set.',
+        '',
+        'Get one - it is free and takes about two minutes:',
+        '  1. https://www.pexels.com/api/  ->  Get Started',
+        '  2. Sign up (email only; no card, no documents)',
+        '  3. Copy the API key it shows you',
+        '  4. Put it in .env as   PEXELS_API_KEY=your-key',
+        '',
+        'Then run  npm run photos  again.',
+      ].join('\n')
+    );
+    process.exit(1);
+  }
+  return key;
 }
 
-function usable(page) {
-  const info = page.imageinfo?.[0];
-  if (!info) return null;
+async function search(query, key) {
+  const url = `${API}?${new URLSearchParams({
+    query,
+    per_page: '40',
+    orientation: 'landscape',
+    size: 'medium',
+  })}`;
 
-  const meta = info.extmetadata || {};
-  const licence = stripHtml(meta.LicenseShortName?.value);
+  const res = await fetch(url, { headers: { authorization: key } });
+  if (!res.ok) {
+    throw new Error(`Pexels search failed (${res.status}). Check the API key.`);
+  }
 
-  if (!ALLOWED_LICENCES.some((re) => re.test(licence))) return null;
-  // JPEG only. A transparent PNG arrived as a .jpg last time and looked wrong
-  // against the card background.
-  if (info.mime !== 'image/jpeg') return null;
+  const body = await res.json();
+  return body.photos || [];
+}
 
-  // Product shots are wider than they are tall, and big enough to not be mush.
-  if (!info.thumburl || info.width < 900) return null;
+function usable(photo) {
+  const description = `${photo.alt || ''} ${photo.url || ''}`;
 
-  // Product shots sit in a 4:3 card. Anything much taller or much wider than
-  // that gets cropped into nonsense.
-  const ratio = info.width / info.height;
-  if (ratio < 1.05 || ratio > 2.1) return null;
+  if (REJECT_BRAND.test(description)) return null;
+  if (REJECT_SUBJECT.test(description)) return null;
 
-  if (REJECT.test(page.title)) return null;
+  // Big enough not to look soft in a card, and roughly the card's shape.
+  if (photo.width < 900) return null;
+  const ratio = photo.width / photo.height;
+  if (ratio < 1.1 || ratio > 2.2) return null;
+
+  const src = photo.src?.large || photo.src?.medium;
+  if (!src) return null;
 
   return {
-    title: page.title.replace(/^File:/, ''),
-    thumburl: info.thumburl,
-    licence,
-    licence_url: stripHtml(meta.LicenseUrl?.value) || null,
-    artist: stripHtml(meta.Artist?.value) || 'Unknown',
-    file_page: info.descriptionurl,
+    id: photo.id,
+    src,
+    alt: photo.alt || '',
+    photographer: photo.photographer || 'Unknown',
+    photographer_url: photo.photographer_url || null,
+    page: photo.url,
   };
 }
 
 async function download(url, destination) {
-  const res = await fetch(url, { headers: { 'user-agent': USER_AGENT } });
+  const res = await fetch(url);
   if (!res.ok) throw new Error(`download failed: ${res.status}`);
 
   const type = res.headers.get('content-type') || '';
@@ -163,63 +145,85 @@ async function download(url, destination) {
 }
 
 async function main() {
+  const key = apiKey();
   const products = JSON.parse(fs.readFileSync(CATALOGUE, 'utf8'));
   fs.mkdirSync(OUT_DIR, { recursive: true });
 
   const credits = {};
   const seen = new Set();
+  let failures = 0;
 
   for (const [category, queries] of Object.entries(SEARCHES)) {
     const wanted = products.filter((p) => p.category === category);
-
-    // Gather candidates from every query for this category, de-duplicated.
     const candidates = [];
+
     for (const query of queries) {
-      const pages = await search(query);
-      for (const page of pages) {
-        const ok = usable(page);
-        if (ok && !seen.has(ok.title)) {
-          seen.add(ok.title);
+      for (const photo of await search(query, key)) {
+        const ok = usable(photo);
+        if (ok && !seen.has(ok.id)) {
+          seen.add(ok.id);
           candidates.push(ok);
         }
       }
-      if (candidates.length >= wanted.length + 6) break;
+      if (candidates.length >= wanted.length + 4) break;
     }
 
-    console.log(`${category}: ${candidates.length} usable candidates for ${wanted.length} products`);
+    console.log(`\n${category}: ${candidates.length} usable photos for ${wanted.length} products`);
 
     let index = 0;
     for (const product of wanted) {
       const pick = candidates[index++];
+      const filename = product.image.replace(/\.\w+$/, '.jpg');
+
       if (!pick) {
-        console.log(`  ! no photo left for ${product.name}`);
+        console.log(`  ! nothing left for ${product.name}`);
+        failures += 1;
         continue;
       }
 
-      const file = path.join(OUT_DIR, product.image);
       try {
-        const size = await download(pick.thumburl, file);
-        credits[product.image] = {
+        const size = await download(pick.src, path.join(OUT_DIR, filename));
+        credits[filename] = {
           product: product.name,
-          source: 'Wikimedia Commons',
-          title: pick.title,
-          photographer: pick.artist,
-          licence: pick.licence,
-          licence_url: pick.licence_url,
-          file_page: pick.file_page,
+          source: 'Pexels',
+          photographer: pick.photographer,
+          photographer_url: pick.photographer_url,
+          page: pick.page,
+          licence: 'Pexels licence',
+          licence_url: 'https://www.pexels.com/license/',
+          alt: pick.alt,
         };
-        console.log(`  ${product.image}  ${(size / 1024).toFixed(0)}KB  ${pick.licence}  ${pick.title.slice(0, 45)}`);
+        console.log(`  ${filename}  ${(size / 1024).toFixed(0)}KB  ${pick.photographer}  "${pick.alt.slice(0, 40)}"`);
       } catch (err) {
-        console.log(`  ! ${product.image}: ${err.message}`);
+        console.log(`  ! ${filename}: ${err.message}`);
+        failures += 1;
       }
     }
   }
 
+  if (failures) {
+    console.log(`\n${failures} product(s) have no photograph. Leaving the catalogue on illustrations.`);
+    console.log('Widen the searches in this file and run it again.');
+    return;
+  }
+
+  // Only once every product has a photograph: point the catalogue at them.
+  // A half-photographed shop looks worse than one that is all drawings.
+  const updated = JSON.parse(fs.readFileSync(CATALOGUE, 'utf8')).map((p) => ({
+    ...p,
+    image: p.image.replace(/\.\w+$/, '.jpg'),
+  }));
+
+  const text = fs.readFileSync(CATALOGUE, 'utf8').replace(/\.svg"/g, '.jpg"');
+  fs.writeFileSync(CATALOGUE, text);
+
   fs.writeFileSync(CREDITS, `${JSON.stringify(credits, null, 2)}\n`);
-  console.log(`\ncredits for ${Object.keys(credits).length} photos written to data/photo-credits.json`);
+
+  console.log(`\n${updated.length} photographs downloaded and credited.`);
+  console.log('data/products.json now points at them. Run  npm run seed  to update the database.');
 }
 
 main().catch((err) => {
-  console.error(err);
+  console.error(err.message);
   process.exit(1);
 });

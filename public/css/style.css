@@ -287,6 +287,15 @@ input:focus, select:focus, textarea:focus {
 .buy-row { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; }
 .spec { border-top: 1px solid var(--line); padding-top: 16px; color: var(--ink-soft); }
 
+.photo-credit {
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  line-height: 1.5;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
 /* ---------- tables ---------- */
 
 table { width: 100%; border-collapse: collapse; background: var(--card); }

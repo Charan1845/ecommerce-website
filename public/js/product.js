@@ -1,5 +1,26 @@
 /** One product, with a quantity picker and an add-to-cart button. */
 
+/**
+ * Says who took the photograph, and that it is not a photograph of this
+ * product - because DevGear does not exist and has never made anything.
+ * Nothing is shown when the shop is using generated illustrations.
+ */
+function creditLine(product) {
+  const credit = product.photo_credit;
+  if (!credit) return '';
+
+  const who = credit.photographer_url
+    ? `<a href="${esc(credit.photographer_url)}" rel="noopener noreferrer nofollow" target="_blank">${esc(credit.photographer)}</a>`
+    : esc(credit.photographer);
+
+  return `
+    <p class="photo-credit">
+      Stock photograph of similar hardware, not of this product.
+      Photo by ${who} on
+      <a href="${esc(credit.page)}" rel="noopener noreferrer nofollow" target="_blank">${esc(credit.source)}</a>.
+    </p>`;
+}
+
 function stockLine(stock) {
   if (stock === 0) return '<p class="stock-line out">Sold out</p>';
   if (stock <= 3) return `<p class="stock-line low">Hurry - only ${stock} left in stock</p>`;
@@ -34,6 +55,7 @@ function render(product) {
         <div class="spec">
           <h2>About this product</h2>
           <p>${esc(product.description)}</p>
+          ${creditLine(product)}
         </div>
       </div>
     </div>`;

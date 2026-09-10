@@ -7,12 +7,36 @@
  * window beside it.
  */
 
+const fs = require('node:fs');
+const path = require('node:path');
 const express = require('express');
 const { all, get } = require('../db');
 const { requireAuth } = require('../auth');
 
 const router = express.Router();
 router.use(requireAuth);
+
+/**
+ * Who photographed each product picture.
+ *
+ * Written by scripts/fetch-photos.js. Absent while the shop is using
+ * generated illustrations, which is why every read of it is optional - a
+ * missing credits file means drawings, not an error.
+ *
+ * Read once at startup rather than per request: it is a small file that only
+ * changes when photographs are re-fetched, and re-reading it on every
+ * catalogue view would be a file read for nothing.
+ */
+const PHOTO_CREDITS = (() => {
+  try {
+    const file = path.join(__dirname, '..', '..', 'data', 'photo-credits.json');
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch {
+    return {};
+  }
+})();
+
+const creditFor = (image) => PHOTO_CREDITS[image] || null;
 
 const CATEGORIES = ['Keyboards', 'Mouse', 'Headsets', 'Monitors'];
 
@@ -108,6 +132,9 @@ router.get('/:id', async (req, res, next) => {
       'SELECT * FROM products WHERE category = ? AND id != ? ORDER BY RANDOM() LIMIT 4',
       [product.category, product.id]
     );
+
+    // Photographers get named on the page they appear on.
+    product.photo_credit = creditFor(product.image);
 
     return res.json({ product, related });
   } catch (err) {

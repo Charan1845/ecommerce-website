@@ -131,6 +131,7 @@ in 2027, so plan for the expiry date or use it only for experimenting.
 | `SEED_ON_BOOT` | Optional | `off` stops the first-boot catalogue load. |
 | `PG_SSL_NO_VERIFY` | Rarely | `1` if your provider uses a self-signed certificate. Neon and Supabase do not. |
 | `PAYMENT_SANDBOX` | Optional | `on` enables the built-in simulator. Ignored when Razorpay keys are set. |
+| `PEXELS_API_KEY` | Optional | Only for `npm run photos`. Never read at runtime, so it does not belong in Render. |
 | `RAZORPAY_KEY_ID` | Optional | Test key from Razorpay. Without it, no Pay button. |
 | `RAZORPAY_KEY_SECRET` | Optional | The matching secret. Never goes to the browser. |
 
