@@ -20,7 +20,7 @@ to still work in 2027, and a database that quietly shuts off after 30 days or
 when student credit runs out is worse than never deploying - it fails exactly
 when somebody is looking.
 
-[Neon](https://neon.tech) fits: free tier, no card, no expiry. Sign up, create
+[Neon](https://neon.com) fits: free tier, no card, no expiry. Sign up, create
 a project, and copy the connection string. It looks like:
 
 ```
@@ -50,6 +50,24 @@ DATABASE_URL="your-connection-string" npm run dev
 
 First boot creates the tables, loads the 48 products, and prints the owner
 password once. Save it.
+
+### One gotcha if you use the same database for both
+
+The app fills an empty database on first boot. If you have already pointed
+your laptop at the same Neon branch, the catalogue is no longer empty, so the
+deployed copy will not seed - and there will be no owner account.
+
+Two ways round it, either is fine:
+
+- Create the owner from your laptop before deploying: put `OWNER_PASSWORD` in
+  `.env` and run `npm run seed`. It only creates what is missing.
+- Or give the deployment its own database. Neon branches are free and instant,
+  and your plan includes ten of them: branch `production` for the deployed
+  site, another for your laptop. That is the tidier habit - it means you can
+  never break the live shop by experimenting locally.
+
+Note that `npm test` always uses SQLite unless you pass `DATABASE_URL`
+explicitly, so the tests never touch either of them.
 
 ## Step 3 - put the app somewhere
 

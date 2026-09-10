@@ -54,6 +54,7 @@ async function seedOwner() {
   // No hardcoded default password. Either you set one, or we invent a strong
   // one and print it once - so a deployed shop can never ship with a password
   // that is written down in a public repository.
+  const chosen = Boolean(process.env.OWNER_PASSWORD);
   const password = process.env.OWNER_PASSWORD || crypto.randomBytes(9).toString('base64url');
 
   await run(
@@ -62,7 +63,9 @@ async function seedOwner() {
     [username, email, bcrypt.hashSync(password, 12)]
   );
 
-  return { username, password };
+  // If you chose the password yourself, you already know it - printing it
+  // would only put it into a terminal log for no reason.
+  return { username, password: chosen ? null : password, chosen };
 }
 
 /**
@@ -103,6 +106,8 @@ async function main() {
   if (owner.password) {
     console.log(`owner:     ${owner.username}`);
     console.log(`password:  ${owner.password}   <- shown once, save it now`);
+  } else if (owner.chosen) {
+    console.log(`owner:     ${owner.username} (password taken from OWNER_PASSWORD)`);
   } else {
     console.log(`owner:     ${owner.username} (already existed, password unchanged)`);
   }

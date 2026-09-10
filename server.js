@@ -39,6 +39,8 @@ async function prepareDatabase() {
   if (owner.password) {
     console.log(`owner "${owner.username}" password: ${owner.password}`);
     console.log('^ this is the only time it is shown. Save it now.');
+  } else if (owner.chosen) {
+    console.log(`owner "${owner.username}" created with the password from OWNER_PASSWORD`);
   }
   if (demo.created) {
     console.log(`demo account "${demo.username}" is ready`);
