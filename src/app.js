@@ -24,6 +24,12 @@ const paymentRoutes = require('./routes/payments');
 // login page itself would render as bare text.
 const OPEN_PAGES = new Set(['/login.html']);
 
+// Pages only the shop owner may open. The real protection is on the /api/admin
+// routes - hiding a page proves nothing, since anyone can read the JavaScript
+// that fetches from it. This just means a customer who guesses the address
+// gets sent home instead of watching a dashboard fail to load.
+const OWNER_PAGES = new Set(['/admin.html']);
+
 /**
  * The front door. A visitor who is not logged in gets the login page,
  * whatever page they asked for - and where they were heading is remembered
@@ -35,9 +41,15 @@ function requireLoginForPages(req, res, next) {
   const isPage = req.path === '/' || req.path.endsWith('.html');
   if (!isPage || OPEN_PAGES.has(req.path)) return next();
 
-  if (req.user) return next();
+  if (!req.user) {
+    return res.redirect(`/login.html?next=${encodeURIComponent(req.originalUrl)}`);
+  }
 
-  return res.redirect(`/login.html?next=${encodeURIComponent(req.originalUrl)}`);
+  if (OWNER_PAGES.has(req.path) && req.user.role !== 'owner') {
+    return res.redirect('/');
+  }
+
+  return next();
 }
 
 /**

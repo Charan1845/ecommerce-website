@@ -17,7 +17,10 @@
 
   <main class="wrap">
     <h1>Owner dashboard</h1>
-    <p class="subtitle">Stock and orders. Only accounts with the owner role can open this page.</p>
+    <p class="subtitle">
+      Orders, customers and stock. Only an account with the owner role can open
+      this page or read anything on it.
+    </p>
 
     <div id="notice" class="notice" hidden></div>
 
@@ -29,29 +32,68 @@
     <div id="content" hidden>
       <div class="stats" id="stats"></div>
 
-      <h2>Stock</h2>
-      <p class="subtitle">
-        Change a number and press Save. Setting an item to 1 is how you reset the
-        last-item demo.
-      </p>
-      <div class="table-wrap" style="margin-bottom:40px">
-        <table>
-          <thead>
-            <tr>
-              <th>Product</th>
-              <th>Brand</th>
-              <th>Category</th>
-              <th class="num">Price</th>
-              <th class="num">Stock</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="products"></tbody>
-        </table>
+      <div class="form-switcher" style="max-width:520px">
+        <button type="button" class="active" data-section="orders">Orders</button>
+        <button type="button" data-section="customers">Customers</button>
+        <button type="button" data-section="stock">Stock</button>
       </div>
 
-      <h2>All orders</h2>
-      <div id="orders"></div>
+      <!-- orders -->
+      <section data-panel="orders">
+        <div class="toolbar">
+          <div class="chips" id="status-filter">
+            <button class="chip active" data-status="">All</button>
+            <button class="chip" data-status="pending">Awaiting payment</button>
+            <button class="chip" data-status="paid">Paid</button>
+          </div>
+          <div class="spacer"></div>
+          <input type="search" id="order-search"
+                 placeholder="Name, email, phone or pincode…" aria-label="Search orders">
+        </div>
+        <div id="orders"></div>
+      </section>
+
+      <!-- customers -->
+      <section data-panel="customers" hidden>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Contact</th>
+                <th>State</th>
+                <th class="num">Orders</th>
+                <th class="num">Paid</th>
+                <th>Last order</th>
+              </tr>
+            </thead>
+            <tbody id="customers"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- stock -->
+      <section data-panel="stock" hidden>
+        <p class="subtitle">
+          Change a number and press Save. Setting an item to 1 is how you reset
+          the last-item demo.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Brand</th>
+                <th>Category</th>
+                <th class="num">Price</th>
+                <th class="num">Stock</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="products"></tbody>
+          </table>
+        </div>
+      </section>
     </div>
   </main>
 

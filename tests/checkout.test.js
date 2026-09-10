@@ -24,7 +24,7 @@ const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 
 const { applySchema, get, all, run, close } = require('../src/db');
-const { seedProducts, seedDemo } = require('../src/seed');
+const { seedProducts, seedDemo, seedOwner } = require('../src/seed');
 const { resetRateLimits } = require('../src/rate-limit');
 const sandboxGateway = require('../src/sandbox-gateway');
 const { createApp } = require('../src/app');
@@ -40,10 +40,19 @@ delete process.env.RAZORPAY_KEY_SECRET;
 let server;
 let BASE;
 
+/** The owner password these tests log in with. Chosen here, not generated. */
+const OWNER_TEST_PASSWORD = 'owner-password-for-tests-only';
+
 before(async () => {
   await applySchema();
   await seedProducts();
   await seedDemo();
+
+  // seedOwner reads OWNER_PASSWORD, so the tests can know it. On a real
+  // deployment it is either set deliberately or invented and printed once.
+  process.env.OWNER_PASSWORD = OWNER_TEST_PASSWORD;
+  await seedOwner();
+  delete process.env.OWNER_PASSWORD;
 
   server = createApp().listen(0);
   BASE = `http://localhost:${server.address().port}`;
@@ -92,7 +101,41 @@ async function newCustomer(username) {
   });
   assert.equal(signup.status, 201, `signup failed: ${JSON.stringify(signup.body)}`);
 
-  return { call, username };
+  return {
+    call,
+    username,
+    // Exposed so a test can request a plain page rather than an API route.
+    get cookie() {
+      return cookie;
+    },
+  };
+}
+
+/** Logged in as the shop owner. The seed makes exactly one of these. */
+async function ownerSession() {
+  resetRateLimits();
+  let cookie = '';
+
+  const login = await fetch(BASE + '/api/auth/login', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ username: 'owner', password: OWNER_TEST_PASSWORD }),
+  });
+  assert.equal(login.status, 200, 'the owner should be able to log in');
+  cookie = login.headers
+    .getSetCookie()
+    .map((c) => c.split(';')[0])
+    .join('; ');
+
+  return async function call(method, url, body) {
+    const res = await fetch(BASE + url, {
+      method,
+      headers: { 'content-type': 'application/json', cookie },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const text = await res.text();
+    return { status: res.status, body: text ? JSON.parse(text) : null };
+  };
 }
 
 const SHIPPING = {
@@ -729,6 +772,86 @@ test('the UPI QR is shaped like a real one and cannot take money', async () => {
       'the payee must not look like a real UPI handle'
     );
   });
+});
+
+test('the owner can see who ordered what, and a customer cannot', async () => {
+  const { customer, orderId } = await customerWithOrder('aria_admin', 21);
+
+  // The customer's own view never exposes anyone else.
+  const asCustomer = await customer.call('GET', '/api/admin/orders');
+  assert.equal(asCustomer.status, 403);
+
+  const owner = await ownerSession();
+  const asOwner = await owner('GET', '/api/admin/orders');
+  assert.equal(asOwner.status, 200);
+
+  const found = asOwner.body.orders.find((o) => o.id === orderId);
+  assert.ok(found, 'the owner should see the order that was just placed');
+  assert.equal(found.username, 'aria_admin');
+  assert.equal(found.email, 'aria_admin@example.com');
+  assert.equal(found.shipping_pincode, '502313');
+  assert.ok(found.shipping_address, 'the owner needs the address to post it');
+  assert.ok(found.items.length, 'and what to put in the box');
+});
+
+test('the owner can search and filter orders', async () => {
+  await customerWithOrder('bela_search', 22);
+
+  const owner = await ownerSession();
+
+  const byName = await owner('GET', '/api/admin/orders?q=bela_search');
+  assert.equal(byName.status, 200);
+  assert.ok(byName.body.orders.length >= 1);
+  assert.ok(byName.body.orders.every((o) => o.username === 'bela_search'));
+
+  const nonsense = await owner('GET', '/api/admin/orders?q=nobody_by_that_name');
+  assert.equal(nonsense.body.orders.length, 0);
+
+  const pending = await owner('GET', '/api/admin/orders?status=pending');
+  assert.ok(pending.body.orders.every((o) => o.status === 'pending'));
+});
+
+test('the customer list is owner only and leaves out the owner', async () => {
+  const shopper = await newCustomer('cleo_list');
+
+  const refused = await shopper.call('GET', '/api/admin/customers');
+  assert.equal(refused.status, 403);
+
+  const owner = await ownerSession();
+  const list = await owner('GET', '/api/admin/customers');
+  assert.equal(list.status, 200);
+
+  assert.ok(list.body.customers.some((c) => c.username === 'cleo_list'));
+  assert.ok(
+    !list.body.customers.some((c) => c.username === 'owner'),
+    'the shop is not one of its own customers'
+  );
+});
+
+test('revenue counts only money that actually arrived', async () => {
+  const owner = await ownerSession();
+  const before = (await owner('GET', '/api/admin/stats')).body;
+
+  // An order placed but not paid for must not move revenue.
+  await customerWithOrder('dara_unpaid', 24);
+  const after = (await owner('GET', '/api/admin/stats')).body;
+
+  assert.equal(after.revenue_paise, before.revenue_paise, 'a pending order is not revenue');
+  assert.ok(after.awaiting_payment_paise > before.awaiting_payment_paise);
+  assert.equal(after.orders, before.orders + 1);
+});
+
+test('a customer who guesses the admin address is sent home', async () => {
+  const shopper = await newCustomer('efe_guess');
+
+  // The page itself, not just the data behind it.
+  const cookie = shopper.cookie;
+  const page = await fetch(BASE + '/admin.html', {
+    headers: { cookie },
+    redirect: 'manual',
+  });
+  assert.equal(page.status, 302);
+  assert.equal(page.headers.get('location'), '/');
 });
 
 test('checkout refuses a bad pincode', async () => {

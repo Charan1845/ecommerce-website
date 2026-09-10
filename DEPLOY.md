@@ -37,7 +37,7 @@ Worth doing, and it takes a minute:
 DATABASE_URL="your-connection-string" npm test
 ```
 
-The same 31 tests now run against real PostgreSQL. This is the more meaningful
+The same 37 tests now run against real PostgreSQL. This is the more meaningful
 run: on SQLite in one process Node handles the two racing checkouts one after
 another, but PostgreSQL executes them genuinely in parallel. If the atomic
 `UPDATE` were wrong, this is where it would show.

@@ -30,7 +30,7 @@ Running the seed again resets every product's stock to its starting number.
 Customers, carts and orders are left alone.
 
 ```bash
-npm test         # 31 tests
+npm test         # 37 tests
 npm run images   # redraw the 48 product illustrations
 ```
 
@@ -279,6 +279,7 @@ DEPLOY.md              step by step, start to finish
 | GET | `/api/admin/products` | owner |
 | PATCH | `/api/admin/products/:id/stock` | owner |
 | GET | `/api/admin/orders` | owner |
+| GET | `/api/admin/customers` | owner |
 | GET | `/api/payments/config` | anyone |
 | POST | `/api/payments/orders/:id` | logged in, own orders only |
 | POST | `/api/payments/verify` | logged in, own orders only |
