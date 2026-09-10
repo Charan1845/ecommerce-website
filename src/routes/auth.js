@@ -69,13 +69,13 @@ router.post('/signup', async (req, res, next) => {
       return res.status(400).json({ error: 'Please fix the highlighted fields.', fields: errors });
     }
 
-    if (get('SELECT id FROM users WHERE username = ?', [values.username])) {
+    if (await get('SELECT id FROM users WHERE username = ?', [values.username])) {
       return res.status(409).json({
         error: 'That username is taken.',
         fields: { username: 'That username is taken.' },
       });
     }
-    if (get('SELECT id FROM users WHERE email = ?', [values.email])) {
+    if (await get('SELECT id FROM users WHERE email = ?', [values.email])) {
       return res.status(409).json({
         error: 'That email is already registered.',
         fields: { email: 'That email is already registered.' },
@@ -83,13 +83,16 @@ router.post('/signup', async (req, res, next) => {
     }
 
     const password_hash = await hashPassword(values.password);
-    const result = run(
+    // RETURNING works the same on SQLite and PostgreSQL, so the new id comes
+    // back from the insert itself rather than a follow-up query.
+    const created = await get(
       `INSERT INTO users (username, email, password_hash, phone, state, role)
-       VALUES (?, ?, ?, ?, ?, 'customer')`,
+       VALUES (?, ?, ?, ?, ?, 'customer')
+       RETURNING id`,
       [values.username, values.email, password_hash, values.phone || null, values.state || null]
     );
 
-    const user = get('SELECT * FROM users WHERE id = ?', [result.lastInsertRowid]);
+    const user = await get('SELECT * FROM users WHERE id = ?', [created.id]);
     issueToken(res, user);
     return res.status(201).json({ user: publicUser(user) });
   } catch (err) {
@@ -107,7 +110,7 @@ router.post('/login', async (req, res, next) => {
     }
 
     // Allow logging in with either the username or the email address.
-    const user = get('SELECT * FROM users WHERE username = ? OR email = ?', [
+    const user = await get('SELECT * FROM users WHERE username = ? OR email = ?', [
       identifier,
       identifier.toLowerCase(),
     ]);
@@ -143,31 +146,39 @@ router.post('/logout', (req, res) => {
  * customer: anyone at all can press that button, so it must never be able to
  * hand out the owner's powers.
  */
-function demoAccount() {
+async function demoAccount() {
   if (process.env.DEMO_LOGIN === 'off') return null;
 
   const username = process.env.DEMO_USERNAME || 'demo';
-  const user = get('SELECT * FROM users WHERE username = ?', [username]);
+  const user = await get('SELECT * FROM users WHERE username = ?', [username]);
 
   if (!user || user.role !== 'customer') return null;
   return user;
 }
 
 /** Is there a demo account? The login page asks before showing the button. */
-router.get('/demo', (_req, res) => {
-  const user = demoAccount();
-  res.json({ available: Boolean(user), username: user ? user.username : null });
+router.get('/demo', async (_req, res, next) => {
+  try {
+    const user = await demoAccount();
+    res.json({ available: Boolean(user), username: user ? user.username : null });
+  } catch (err) {
+    next(err);
+  }
 });
 
 /** Log in as the demo customer. No password needed - that is the point. */
-router.post('/demo-login', (_req, res) => {
-  const user = demoAccount();
-  if (!user) {
-    return res.status(404).json({ error: 'The demo account is not available.' });
-  }
+router.post('/demo-login', async (_req, res, next) => {
+  try {
+    const user = await demoAccount();
+    if (!user) {
+      return res.status(404).json({ error: 'The demo account is not available.' });
+    }
 
-  issueToken(res, user);
-  return res.json({ user: publicUser(user) });
+    issueToken(res, user);
+    return res.json({ user: publicUser(user) });
+  } catch (err) {
+    return next(err);
+  }
 });
 
 /** Who am I? The front end calls this on every page load to draw the header. */

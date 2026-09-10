@@ -7,7 +7,7 @@
  */
 
 const express = require('express');
-const { all, get, run, transaction } = require('../db');
+const { all, get, transaction } = require('../db');
 const { requireAuth } = require('../auth');
 
 const router = express.Router();
@@ -55,16 +55,21 @@ function validateShipping(body) {
  * The whole thing runs inside one transaction, so it either happens
  * completely or not at all. A checkout that took the stock but failed to
  * write the order would be worse than one that simply failed.
+ *
+ * Note that everything inside uses the `tx` handed to the callback, not the
+ * module-level helpers. On PostgreSQL a transaction lives on one connection,
+ * and a query sent outside it would land on a different connection and not be
+ * part of the transaction at all.
  */
-router.post('/', (req, res, next) => {
+router.post('/', async (req, res, next) => {
   const { errors, shipping } = validateShipping(req.body || {});
   if (Object.keys(errors).length) {
     return res.status(400).json({ error: 'Please fix the highlighted fields.', fields: errors });
   }
 
   try {
-    const order = transaction(() => {
-      const cart = all(
+    const order = await transaction(async (tx) => {
+      const cart = await tx.all(
         `SELECT c.product_id, c.quantity
          FROM cart_items c
          WHERE c.user_id = ?
@@ -99,14 +104,15 @@ router.post('/', (req, res, next) => {
         // If it changed nothing, somebody else got in first - and we find out
         // by looking at how many rows changed, not by asking a second time.
         // ---------------------------------------------------------------
-        const taken = run(
+        const taken = await tx.run(
           'UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?',
           [line.quantity, line.product_id, line.quantity]
         );
 
-        const product = get('SELECT name, price_paise, stock FROM products WHERE id = ?', [
-          line.product_id,
-        ]);
+        const product = await tx.get(
+          'SELECT name, price_paise, stock FROM products WHERE id = ?',
+          [line.product_id]
+        );
 
         if (taken.changes === 0) {
           // Throwing rolls the transaction back, which puts back any stock
@@ -125,11 +131,12 @@ router.post('/', (req, res, next) => {
         });
       }
 
-      const created = run(
+      const created = await tx.get(
         `INSERT INTO orders
            (user_id, status, total_paise, shipping_name, shipping_phone,
             shipping_address, shipping_state, shipping_pincode)
-         VALUES (?, 'pending', ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, 'pending', ?, ?, ?, ?, ?, ?)
+         RETURNING id`,
         [
           req.user.id,
           total,
@@ -141,10 +148,10 @@ router.post('/', (req, res, next) => {
         ]
       );
 
-      const orderId = Number(created.lastInsertRowid);
+      const orderId = Number(created.id);
 
       for (const line of lines) {
-        run(
+        await tx.run(
           `INSERT INTO order_items
              (order_id, product_id, product_name, unit_price_paise, quantity)
            VALUES (?, ?, ?, ?, ?)`,
@@ -152,7 +159,7 @@ router.post('/', (req, res, next) => {
         );
       }
 
-      run('DELETE FROM cart_items WHERE user_id = ?', [req.user.id]);
+      await tx.run('DELETE FROM cart_items WHERE user_id = ?', [req.user.id]);
 
       return { id: orderId, total_paise: total, status: 'pending', items: lines };
     });
@@ -175,45 +182,53 @@ router.post('/', (req, res, next) => {
 });
 
 /** GET /api/orders - this customer's own orders, newest first. */
-router.get('/', (req, res) => {
-  const orders = all(
-    `SELECT id, status, total_paise, placed_at
-     FROM orders WHERE user_id = ? ORDER BY placed_at DESC, id DESC`,
-    [req.user.id]
-  );
+router.get('/', async (req, res, next) => {
+  try {
+    const orders = await all(
+      `SELECT id, status, total_paise, placed_at
+       FROM orders WHERE user_id = ? ORDER BY placed_at DESC, id DESC`,
+      [req.user.id]
+    );
 
-  for (const order of orders) {
-    order.items = all(
+    for (const order of orders) {
+      order.items = await all(
+        `SELECT product_id, product_name, unit_price_paise, quantity
+         FROM order_items WHERE order_id = ?`,
+        [order.id]
+      );
+    }
+
+    return res.json({ orders });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/** GET /api/orders/:id - one order, only if it belongs to you. */
+router.get('/:id', async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) {
+      return res.status(400).json({ error: 'Bad order id.' });
+    }
+
+    // The user_id condition is the security check. Without it, changing the
+    // number in the address bar would show you somebody else's order.
+    const order = await get('SELECT * FROM orders WHERE id = ? AND user_id = ?', [id, req.user.id]);
+    if (!order) {
+      return res.status(404).json({ error: 'No such order.' });
+    }
+
+    order.items = await all(
       `SELECT product_id, product_name, unit_price_paise, quantity
        FROM order_items WHERE order_id = ?`,
       [order.id]
     );
+
+    return res.json({ order });
+  } catch (err) {
+    return next(err);
   }
-
-  res.json({ orders });
-});
-
-/** GET /api/orders/:id - one order, only if it belongs to you. */
-router.get('/:id', (req, res) => {
-  const id = Number(req.params.id);
-  if (!Number.isInteger(id)) {
-    return res.status(400).json({ error: 'Bad order id.' });
-  }
-
-  // The user_id condition is the security check. Without it, changing the
-  // number in the address bar would show you somebody else's order.
-  const order = get('SELECT * FROM orders WHERE id = ? AND user_id = ?', [id, req.user.id]);
-  if (!order) {
-    return res.status(404).json({ error: 'No such order.' });
-  }
-
-  order.items = all(
-    `SELECT product_id, product_name, unit_price_paise, quantity
-     FROM order_items WHERE order_id = ?`,
-    [order.id]
-  );
-
-  return res.json({ order });
 });
 
 module.exports = router;

@@ -16,8 +16,8 @@ router.use(requireAuth);
 
 const MAX_PER_LINE = 10;
 
-function readCart(userId) {
-  const items = all(
+async function readCart(userId) {
+  const items = await all(
     `SELECT c.product_id,
             c.quantity,
             p.name,
@@ -50,99 +50,123 @@ function readCart(userId) {
 }
 
 /** GET /api/cart */
-router.get('/', (req, res) => {
-  res.json(readCart(req.user.id));
+router.get('/', async (req, res, next) => {
+  try {
+    return res.json(await readCart(req.user.id));
+  } catch (err) {
+    return next(err);
+  }
 });
 
 /** POST /api/cart  { product_id, quantity } - add, or increase if already there. */
-router.post('/', (req, res) => {
-  const productId = Number(req.body?.product_id);
-  const quantity = Number(req.body?.quantity ?? 1);
+router.post('/', async (req, res, next) => {
+  try {
+    const productId = Number(req.body?.product_id);
+    const quantity = Number(req.body?.quantity ?? 1);
 
-  if (!Number.isInteger(productId) || !Number.isInteger(quantity) || quantity < 1) {
-    return res.status(400).json({ error: 'Bad product or quantity.' });
+    if (!Number.isInteger(productId) || !Number.isInteger(quantity) || quantity < 1) {
+      return res.status(400).json({ error: 'Bad product or quantity.' });
+    }
+
+    const product = await get('SELECT * FROM products WHERE id = ?', [productId]);
+    if (!product) {
+      return res.status(404).json({ error: 'No such product.' });
+    }
+    if (product.stock === 0) {
+      return res.status(409).json({ error: `${product.name} is out of stock.` });
+    }
+
+    const existing = await get(
+      'SELECT quantity FROM cart_items WHERE user_id = ? AND product_id = ?',
+      [req.user.id, productId]
+    );
+    const wanted = (existing?.quantity || 0) + quantity;
+
+    if (wanted > MAX_PER_LINE) {
+      return res.status(409).json({ error: `You can order at most ${MAX_PER_LINE} of one item.` });
+    }
+    if (wanted > product.stock) {
+      return res.status(409).json({ error: `Only ${product.stock} left of ${product.name}.` });
+    }
+
+    await run(
+      `INSERT INTO cart_items (user_id, product_id, quantity)
+       VALUES (?, ?, ?)
+       ON CONFLICT (user_id, product_id) DO UPDATE SET quantity = ?`,
+      [req.user.id, productId, wanted, wanted]
+    );
+
+    return res.status(201).json(await readCart(req.user.id));
+  } catch (err) {
+    return next(err);
   }
-
-  const product = get('SELECT * FROM products WHERE id = ?', [productId]);
-  if (!product) {
-    return res.status(404).json({ error: 'No such product.' });
-  }
-  if (product.stock === 0) {
-    return res.status(409).json({ error: `${product.name} is out of stock.` });
-  }
-
-  const existing = get('SELECT quantity FROM cart_items WHERE user_id = ? AND product_id = ?', [
-    req.user.id,
-    productId,
-  ]);
-  const wanted = (existing?.quantity || 0) + quantity;
-
-  if (wanted > MAX_PER_LINE) {
-    return res.status(409).json({ error: `You can order at most ${MAX_PER_LINE} of one item.` });
-  }
-  if (wanted > product.stock) {
-    return res.status(409).json({
-      error: `Only ${product.stock} left of ${product.name}.`,
-    });
-  }
-
-  run(
-    `INSERT INTO cart_items (user_id, product_id, quantity)
-     VALUES (?, ?, ?)
-     ON CONFLICT (user_id, product_id) DO UPDATE SET quantity = ?`,
-    [req.user.id, productId, wanted, wanted]
-  );
-
-  return res.status(201).json(readCart(req.user.id));
 });
 
 /** PATCH /api/cart/:productId  { quantity } - set an exact quantity. */
-router.patch('/:productId', (req, res) => {
-  const productId = Number(req.params.productId);
-  const quantity = Number(req.body?.quantity);
+router.patch('/:productId', async (req, res, next) => {
+  try {
+    const productId = Number(req.params.productId);
+    const quantity = Number(req.body?.quantity);
 
-  if (!Number.isInteger(productId) || !Number.isInteger(quantity) || quantity < 0) {
-    return res.status(400).json({ error: 'Bad product or quantity.' });
-  }
+    if (!Number.isInteger(productId) || !Number.isInteger(quantity) || quantity < 0) {
+      return res.status(400).json({ error: 'Bad product or quantity.' });
+    }
 
-  if (quantity === 0) {
-    run('DELETE FROM cart_items WHERE user_id = ? AND product_id = ?', [req.user.id, productId]);
-    return res.json(readCart(req.user.id));
-  }
+    if (quantity === 0) {
+      await run('DELETE FROM cart_items WHERE user_id = ? AND product_id = ?', [
+        req.user.id,
+        productId,
+      ]);
+      return res.json(await readCart(req.user.id));
+    }
 
-  const product = get('SELECT * FROM products WHERE id = ?', [productId]);
-  if (!product) {
-    return res.status(404).json({ error: 'No such product.' });
-  }
-  if (quantity > MAX_PER_LINE) {
-    return res.status(409).json({ error: `You can order at most ${MAX_PER_LINE} of one item.` });
-  }
-  if (quantity > product.stock) {
-    return res.status(409).json({ error: `Only ${product.stock} left of ${product.name}.` });
-  }
+    const product = await get('SELECT * FROM products WHERE id = ?', [productId]);
+    if (!product) {
+      return res.status(404).json({ error: 'No such product.' });
+    }
+    if (quantity > MAX_PER_LINE) {
+      return res.status(409).json({ error: `You can order at most ${MAX_PER_LINE} of one item.` });
+    }
+    if (quantity > product.stock) {
+      return res.status(409).json({ error: `Only ${product.stock} left of ${product.name}.` });
+    }
 
-  const result = run(
-    'UPDATE cart_items SET quantity = ? WHERE user_id = ? AND product_id = ?',
-    [quantity, req.user.id, productId]
-  );
-  if (result.changes === 0) {
-    return res.status(404).json({ error: 'That item is not in your cart.' });
-  }
+    const result = await run(
+      'UPDATE cart_items SET quantity = ? WHERE user_id = ? AND product_id = ?',
+      [quantity, req.user.id, productId]
+    );
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'That item is not in your cart.' });
+    }
 
-  return res.json(readCart(req.user.id));
+    return res.json(await readCart(req.user.id));
+  } catch (err) {
+    return next(err);
+  }
 });
 
 /** DELETE /api/cart/:productId */
-router.delete('/:productId', (req, res) => {
-  const productId = Number(req.params.productId);
-  run('DELETE FROM cart_items WHERE user_id = ? AND product_id = ?', [req.user.id, productId]);
-  res.json(readCart(req.user.id));
+router.delete('/:productId', async (req, res, next) => {
+  try {
+    const productId = Number(req.params.productId);
+    await run('DELETE FROM cart_items WHERE user_id = ? AND product_id = ?', [
+      req.user.id,
+      productId,
+    ]);
+    return res.json(await readCart(req.user.id));
+  } catch (err) {
+    return next(err);
+  }
 });
 
 /** DELETE /api/cart - empty it. */
-router.delete('/', (req, res) => {
-  run('DELETE FROM cart_items WHERE user_id = ?', [req.user.id]);
-  res.json(readCart(req.user.id));
+router.delete('/', async (req, res, next) => {
+  try {
+    await run('DELETE FROM cart_items WHERE user_id = ?', [req.user.id]);
+    return res.json(await readCart(req.user.id));
+  } catch (err) {
+    return next(err);
+  }
 });
 
 module.exports = router;

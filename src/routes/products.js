@@ -27,68 +27,92 @@ const SORTS = {
  * GET /api/products
  * Optional filters: ?category=Mouse&brand=Logitech&q=wireless&sort=price-low
  */
-router.get('/', (req, res) => {
-  const conditions = [];
-  const params = [];
+router.get('/', async (req, res, next) => {
+  try {
+    const conditions = [];
+    const params = [];
 
-  const { category, brand, q } = req.query;
+    const { category, brand, q } = req.query;
 
-  if (category && CATEGORIES.includes(category)) {
-    conditions.push('category = ?');
-    params.push(category);
+    if (category && CATEGORIES.includes(category)) {
+      conditions.push('category = ?');
+      params.push(category);
+    }
+    if (brand) {
+      conditions.push('brand = ?');
+      params.push(brand);
+    }
+    if (q) {
+      // LOWER on both sides so searching works the same on SQLite and
+      // PostgreSQL - SQLite's LIKE ignores case, PostgreSQL's does not.
+      //
+      // Values always travel as parameters, never glued into the SQL text.
+      // Gluing user input into a query is how SQL injection happens.
+      conditions.push(
+        '(LOWER(name) LIKE LOWER(?) OR LOWER(brand) LIKE LOWER(?) OR LOWER(description) LIKE LOWER(?))'
+      );
+      const like = `%${q}%`;
+      params.push(like, like, like);
+    }
+
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    const orderBy = SORTS[req.query.sort] || SORTS.featured;
+
+    const products = await all(`SELECT * FROM products ${where} ORDER BY ${orderBy}`, params);
+    return res.json({ products, count: products.length });
+  } catch (err) {
+    return next(err);
   }
-  if (brand) {
-    conditions.push('brand = ?');
-    params.push(brand);
-  }
-  if (q) {
-    // Values always travel as parameters, never glued into the SQL text.
-    // Gluing user input into a query is how SQL injection happens.
-    conditions.push('(name LIKE ? OR brand LIKE ? OR description LIKE ?)');
-    const like = `%${q}%`;
-    params.push(like, like, like);
-  }
-
-  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-  const orderBy = SORTS[req.query.sort] || SORTS.featured;
-
-  const products = all(`SELECT * FROM products ${where} ORDER BY ${orderBy}`, params);
-  res.json({ products, count: products.length });
 });
 
 /** The category list, with how many products are in each. */
-router.get('/meta/categories', (_req, res) => {
-  const rows = all(
-    `SELECT category, COUNT(*) AS count
-     FROM products GROUP BY category ORDER BY category`
-  );
-  res.json({ categories: rows });
+router.get('/meta/categories', async (_req, res, next) => {
+  try {
+    const rows = await all(
+      `SELECT category, COUNT(*) AS count
+       FROM products GROUP BY category ORDER BY category`
+    );
+    // PostgreSQL returns COUNT(*) as a string, because a bigint does not
+    // always fit in a JavaScript number. These counts are tiny, so make them
+    // numbers before they reach the page.
+    return res.json({ categories: rows.map((r) => ({ ...r, count: Number(r.count) })) });
+  } catch (err) {
+    return next(err);
+  }
 });
 
 /** Every brand we stock, for the filter dropdown. */
-router.get('/meta/brands', (_req, res) => {
-  const rows = all('SELECT DISTINCT brand FROM products ORDER BY brand');
-  res.json({ brands: rows.map((r) => r.brand) });
+router.get('/meta/brands', async (_req, res, next) => {
+  try {
+    const rows = await all('SELECT DISTINCT brand FROM products ORDER BY brand');
+    return res.json({ brands: rows.map((r) => r.brand) });
+  } catch (err) {
+    return next(err);
+  }
 });
 
 /** GET /api/products/:id - one product. */
-router.get('/:id', (req, res) => {
-  const id = Number(req.params.id);
-  if (!Number.isInteger(id)) {
-    return res.status(400).json({ error: 'Bad product id.' });
+router.get('/:id', async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) {
+      return res.status(400).json({ error: 'Bad product id.' });
+    }
+
+    const product = await get('SELECT * FROM products WHERE id = ?', [id]);
+    if (!product) {
+      return res.status(404).json({ error: 'No such product.' });
+    }
+
+    const related = await all(
+      'SELECT * FROM products WHERE category = ? AND id != ? ORDER BY RANDOM() LIMIT 4',
+      [product.category, product.id]
+    );
+
+    return res.json({ product, related });
+  } catch (err) {
+    return next(err);
   }
-
-  const product = get('SELECT * FROM products WHERE id = ?', [id]);
-  if (!product) {
-    return res.status(404).json({ error: 'No such product.' });
-  }
-
-  const related = all(
-    'SELECT * FROM products WHERE category = ? AND id != ? ORDER BY RANDOM() LIMIT 4',
-    [product.category, product.id]
-  );
-
-  return res.json({ product, related });
 });
 
 module.exports = router;

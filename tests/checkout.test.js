@@ -3,8 +3,10 @@
  *
  * Run with:  npm test
  *
- * Each run uses a fresh throwaway database in the temp folder, so these never
- * touch the shop you have been clicking around in.
+ * These run against SQLite in a throwaway file, so they are fast and need
+ * nothing installed. Point DATABASE_URL at a scratch PostgreSQL database and
+ * the same tests run against that instead - worth doing before deploying,
+ * because that is where the checkout race becomes genuinely parallel.
  */
 
 const os = require('node:os');
@@ -12,30 +14,36 @@ const path = require('node:path');
 const fs = require('node:fs');
 
 // These must be set before src/db is loaded, because it reads them on import.
+const USING_PG = Boolean(process.env.DATABASE_URL);
 const DB_FILE = path.join(os.tmpdir(), `devgear-test-${process.pid}-${Date.now()}.db`);
-process.env.DB_FILE = DB_FILE;
+if (!USING_PG) process.env.DB_FILE = DB_FILE;
 process.env.JWT_SECRET = 'test-only-secret';
 
-const test = require('node:test');
+const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 
 const { applySchema, get, all, run, close } = require('../src/db');
 const { seedProducts, seedDemo } = require('../src/seed');
 const { createApp } = require('../src/app');
 
-applySchema();
-seedProducts();
-seedDemo();
+let server;
+let BASE;
 
-const server = createApp().listen(0);
-const BASE = `http://localhost:${server.address().port}`;
+before(async () => {
+  await applySchema();
+  await seedProducts();
+  await seedDemo();
 
-test.after(() => {
-  server.close();
+  server = createApp().listen(0);
+  BASE = `http://localhost:${server.address().port}`;
+});
+
+after(async () => {
+  server?.close();
   // Windows will not delete a file that is still open, so close the database
   // before removing it.
-  close();
-  fs.rmSync(DB_FILE, { force: true });
+  await close();
+  if (!USING_PG) fs.rmSync(DB_FILE, { force: true });
 });
 
 /** A logged-in browser: remembers its own cookie, like a real one would. */
@@ -81,12 +89,19 @@ const SHIPPING = {
   shipping_pincode: '502313',
 };
 
+/** Cookie string from a plain fetch response. */
+const cookieFrom = (res) =>
+  res.headers
+    .getSetCookie()
+    .map((c) => c.split(';')[0])
+    .join('; ');
+
 // ---------------------------------------------------------------------------
 
 test('two buyers race for the last item and exactly one wins', async () => {
   // Product 13, the MX Master 3S, is seeded with stock 1.
   const productId = 13;
-  run('UPDATE products SET stock = 1 WHERE id = ?', [productId]);
+  await run('UPDATE products SET stock = 1 WHERE id = ?', [productId]);
 
   const alice = await newCustomer('alice_race');
   const bob = await newCustomer('bob_race');
@@ -107,16 +122,16 @@ test('two buyers race for the last item and exactly one wins', async () => {
   assert.match(loser.body.error, /sold out|Only 0 left/i);
 
   // The shop must not have sold something it did not have.
-  const product = get('SELECT stock FROM products WHERE id = ?', [productId]);
+  const product = await get('SELECT stock FROM products WHERE id = ?', [productId]);
   assert.equal(product.stock, 0, 'stock must land on 0, never below');
 
-  const orders = all('SELECT id FROM orders');
+  const orders = await all('SELECT id FROM orders');
   assert.equal(orders.length, 1, 'only one order should exist');
 });
 
 test('the loser keeps their cart, so they can try something else', async () => {
   const productId = 14;
-  run('UPDATE products SET stock = 1 WHERE id = ?', [productId]);
+  await run('UPDATE products SET stock = 1 WHERE id = ?', [productId]);
 
   const carol = await newCustomer('carol_race');
   const dave = await newCustomer('dave_race');
@@ -124,7 +139,7 @@ test('the loser keeps their cart, so they can try something else', async () => {
   await carol.call('POST', '/api/cart', { product_id: productId, quantity: 1 });
   await dave.call('POST', '/api/cart', { product_id: productId, quantity: 1 });
 
-  const [c, d] = await Promise.all([
+  const [c] = await Promise.all([
     carol.call('POST', '/api/orders', SHIPPING),
     dave.call('POST', '/api/orders', SHIPPING),
   ]);
@@ -137,26 +152,30 @@ test('the loser keeps their cart, so they can try something else', async () => {
 test('an order with several items is all-or-nothing', async () => {
   // One item plentiful, one item gone. The whole order must fail, and the
   // plentiful one must not be quietly taken from stock.
-  run('UPDATE products SET stock = 50 WHERE id = 17');
-  run('UPDATE products SET stock = 0  WHERE id = 18');
+  await run('UPDATE products SET stock = 50 WHERE id = 17');
 
   const eve = await newCustomer('eve_partial');
   await eve.call('POST', '/api/cart', { product_id: 17, quantity: 2 });
+
   // Put it in the cart while stock exists, then have it sell out underneath.
-  run('UPDATE products SET stock = 5 WHERE id = 18');
+  await run('UPDATE products SET stock = 5 WHERE id = 18');
   await eve.call('POST', '/api/cart', { product_id: 18, quantity: 1 });
-  run('UPDATE products SET stock = 0 WHERE id = 18');
+  await run('UPDATE products SET stock = 0 WHERE id = 18');
 
   const result = await eve.call('POST', '/api/orders', SHIPPING);
   assert.equal(result.status, 409);
 
-  const plentiful = get('SELECT stock FROM products WHERE id = 17');
-  assert.equal(plentiful.stock, 50, 'a failed order must not take stock from the items that were fine');
+  const plentiful = await get('SELECT stock FROM products WHERE id = 17');
+  assert.equal(
+    plentiful.stock,
+    50,
+    'a failed order must not take stock from the items that were fine'
+  );
 });
 
 test('an order remembers the price it was placed at', async () => {
   const productId = 20;
-  run('UPDATE products SET stock = 5, price_paise = 54900 WHERE id = ?', [productId]);
+  await run('UPDATE products SET stock = 5, price_paise = 54900 WHERE id = ?', [productId]);
 
   const frank = await newCustomer('frank_price');
   await frank.call('POST', '/api/cart', { product_id: productId, quantity: 1 });
@@ -164,7 +183,7 @@ test('an order remembers the price it was placed at', async () => {
   assert.equal(placed.status, 201);
 
   // The shop doubles the price the next morning.
-  run('UPDATE products SET price_paise = 109800 WHERE id = ?', [productId]);
+  await run('UPDATE products SET price_paise = 109800 WHERE id = ?', [productId]);
 
   const orders = await frank.call('GET', '/api/orders');
   const item = orders.body.orders[0].items[0];
@@ -174,19 +193,19 @@ test('an order remembers the price it was placed at', async () => {
 
 test('a cart shows the current price, not the price when it was added', async () => {
   const productId = 22;
-  run('UPDATE products SET stock = 5, price_paise = 89900 WHERE id = ?', [productId]);
+  await run('UPDATE products SET stock = 5, price_paise = 89900 WHERE id = ?', [productId]);
 
   const grace = await newCustomer('grace_price');
   await grace.call('POST', '/api/cart', { product_id: productId, quantity: 1 });
 
-  run('UPDATE products SET price_paise = 49900 WHERE id = ?', [productId]);
+  await run('UPDATE products SET price_paise = 49900 WHERE id = ?', [productId]);
 
   const cart = await grace.call('GET', '/api/cart');
   assert.equal(cart.body.total_paise, 49900, 'the cart should follow the live price');
 });
 
 test('a sold out product cannot be added to a cart', async () => {
-  run('UPDATE products SET stock = 0 WHERE id = 27');
+  await run('UPDATE products SET stock = 0 WHERE id = 27');
 
   const heidi = await newCustomer('heidi_stock');
   const result = await heidi.call('POST', '/api/cart', { product_id: 27, quantity: 1 });
@@ -196,7 +215,7 @@ test('a sold out product cannot be added to a cart', async () => {
 });
 
 test('you cannot read another customer order', async () => {
-  run('UPDATE products SET stock = 5 WHERE id = 23');
+  await run('UPDATE products SET stock = 5 WHERE id = 23');
 
   const ivan = await newCustomer('ivan_privacy');
   await ivan.call('POST', '/api/cart', { product_id: 23, quantity: 1 });
@@ -222,7 +241,7 @@ test('a customer cannot use the owner routes', async () => {
 test('passwords are never stored as typed', async () => {
   await newCustomer('laura_hash');
 
-  const row = get('SELECT password_hash FROM users WHERE username = ?', ['laura_hash']);
+  const row = await get('SELECT password_hash FROM users WHERE username = ?', ['laura_hash']);
   assert.ok(row.password_hash);
   assert.notEqual(row.password_hash, 'a-good-password');
   assert.match(row.password_hash, /^\$2[aby]\$/, 'should be a bcrypt hash');
@@ -263,10 +282,7 @@ test('the demo button logs you in without an account', async () => {
   const login = await fetch(`${BASE}/api/auth/demo-login`, { method: 'POST' });
   assert.equal(login.status, 200);
 
-  const cookie = login.headers
-    .getSetCookie()
-    .map((c) => c.split(';')[0])
-    .join('; ');
+  const cookie = cookieFrom(login);
   assert.ok(cookie, 'demo login must set a login cookie');
 
   // And that cookie really does get you into the shop.
@@ -276,17 +292,14 @@ test('the demo button logs you in without an account', async () => {
 
 test('the demo account is a customer, not the owner', async () => {
   const login = await fetch(`${BASE}/api/auth/demo-login`, { method: 'POST' });
-  const cookie = login.headers
-    .getSetCookie()
-    .map((c) => c.split(';')[0])
-    .join('; ');
+  const cookie = cookieFrom(login);
 
   const { user } = await login.json();
   assert.equal(user.role, 'customer');
 
   // Anyone at all can press that button, so it must not reach the owner pages.
-  const admin = await fetch(`${BASE}/api/admin/orders`, { headers: { cookie } });
-  assert.equal(admin.status, 403);
+  const orders = await fetch(`${BASE}/api/admin/orders`, { headers: { cookie } });
+  assert.equal(orders.status, 403);
 
   const stock = await fetch(`${BASE}/api/admin/products/13/stock`, {
     method: 'PATCH',
@@ -312,12 +325,12 @@ test('the demo account can be switched off for a deployment', async () => {
 test('an owner account can never be handed out as the demo', async () => {
   // If somebody ever renamed the demo account onto an owner, the endpoint has
   // to refuse rather than give the shop away.
-  run("UPDATE users SET role = 'owner' WHERE username = 'demo'");
+  await run("UPDATE users SET role = 'owner' WHERE username = 'demo'");
   try {
     const login = await fetch(`${BASE}/api/auth/demo-login`, { method: 'POST' });
     assert.equal(login.status, 404);
   } finally {
-    run("UPDATE users SET role = 'customer' WHERE username = 'demo'");
+    await run("UPDATE users SET role = 'customer' WHERE username = 'demo'");
   }
 });
 
@@ -330,7 +343,7 @@ test('the catalogue data is behind the login too', async () => {
 });
 
 test('checkout refuses a bad pincode', async () => {
-  run('UPDATE products SET stock = 5 WHERE id = 24');
+  await run('UPDATE products SET stock = 5 WHERE id = 24');
 
   const nina = await newCustomer('nina_shipping');
   await nina.call('POST', '/api/cart', { product_id: 24, quantity: 1 });

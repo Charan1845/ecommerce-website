@@ -1,5 +1,6 @@
 /**
- * Fills an empty database with the 48 products, and creates the shop owner.
+ * Fills an empty database with the 48 products, the shop owner and the shared
+ * demo account.
  *
  * Run it with:  npm run seed
  *
@@ -15,16 +16,16 @@ const fs = require('node:fs');
 const path = require('node:path');
 const bcrypt = require('bcryptjs');
 
-const { applySchema, get, run, transaction, DB_FILE } = require('./db');
+const { applySchema, get, run, transaction, describe } = require('./db');
 
 const CATALOGUE = path.join(__dirname, '..', 'data', 'products.json');
 
-function seedProducts() {
+async function seedProducts() {
   const products = JSON.parse(fs.readFileSync(CATALOGUE, 'utf8'));
 
-  transaction(() => {
+  await transaction(async (tx) => {
     for (const p of products) {
-      run(
+      await tx.run(
         `INSERT INTO products (id, name, brand, category, price_paise, description, image, stock)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT (id) DO UPDATE SET
@@ -43,11 +44,11 @@ function seedProducts() {
   return products.length;
 }
 
-function seedOwner() {
+async function seedOwner() {
   const username = process.env.OWNER_USERNAME || 'owner';
   const email = process.env.OWNER_EMAIL || 'owner@devgear.local';
 
-  const existing = get('SELECT id FROM users WHERE username = ?', [username]);
+  const existing = await get('SELECT id FROM users WHERE username = ?', [username]);
   if (existing) return { username, password: null };
 
   // No hardcoded default password. Either you set one, or we invent a strong
@@ -55,7 +56,7 @@ function seedOwner() {
   // that is written down in a public repository.
   const password = process.env.OWNER_PASSWORD || crypto.randomBytes(9).toString('base64url');
 
-  run(
+  await run(
     `INSERT INTO users (username, email, password_hash, role)
      VALUES (?, ?, ?, 'owner')`,
     [username, email, bcrypt.hashSync(password, 12)]
@@ -72,15 +73,15 @@ function seedOwner() {
  * meant to be public, which is exactly why it must not be able to change stock
  * or read other people's orders.
  */
-function seedDemo() {
+async function seedDemo() {
   const username = process.env.DEMO_USERNAME || 'demo';
   const password = process.env.DEMO_PASSWORD || 'demo1234';
   const email = process.env.DEMO_EMAIL || 'demo@devgear.local';
 
-  const existing = get('SELECT id FROM users WHERE username = ?', [username]);
+  const existing = await get('SELECT id FROM users WHERE username = ?', [username]);
   if (existing) return { username, created: false };
 
-  run(
+  await run(
     `INSERT INTO users (username, email, password_hash, phone, state, role)
      VALUES (?, ?, ?, ?, ?, 'customer')`,
     [username, email, bcrypt.hashSync(password, 12), '9000000000', 'Telangana']
@@ -89,14 +90,14 @@ function seedDemo() {
   return { username, password, created: true };
 }
 
-function main() {
-  applySchema();
+async function main() {
+  await applySchema();
 
-  const count = seedProducts();
-  const owner = seedOwner();
-  const demo = seedDemo();
+  const count = await seedProducts();
+  const owner = await seedOwner();
+  const demo = await seedDemo();
 
-  console.log(`database:  ${DB_FILE}`);
+  console.log(`database:  ${describe}`);
   console.log(`products:  ${count} loaded (stock reset to starting values)`);
 
   if (owner.password) {
@@ -113,7 +114,12 @@ function main() {
 
 // Only run when started directly (npm run seed), not when the tests import it.
 if (require.main === module) {
-  main();
+  main()
+    .then(() => process.exit(0))
+    .catch((err) => {
+      console.error('Seeding failed:', err);
+      process.exit(1);
+    });
 }
 
 module.exports = { seedProducts, seedOwner, seedDemo };

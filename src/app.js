@@ -10,7 +10,6 @@ const path = require('node:path');
 const express = require('express');
 const cookieParser = require('cookie-parser');
 
-const { applySchema } = require('./db');
 const { loadUser } = require('./auth');
 
 const authRoutes = require('./routes/auth');
@@ -40,11 +39,13 @@ function requireLoginForPages(req, res, next) {
   return res.redirect(`/login.html?next=${encodeURIComponent(req.originalUrl)}`);
 }
 
+/**
+ * Build the app. The caller is responsible for having run applySchema()
+ * first - creating tables is a database round trip now, so it cannot happen
+ * inside this synchronous function.
+ */
 function createApp() {
   const app = express();
-
-  // Make sure the tables exist before we take a single request.
-  applySchema();
 
   app.use(express.json());
   app.use(cookieParser());

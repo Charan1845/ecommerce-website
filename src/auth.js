@@ -52,7 +52,7 @@ function clearToken(res) {
  * Reads the cookie and, if it is valid, hangs the user on req.user.
  * Never rejects - pages like the catalogue work fine logged out.
  */
-function loadUser(req, _res, next) {
+async function loadUser(req, _res, next) {
   req.user = null;
 
   const token = req.cookies?.[COOKIE_NAME];
@@ -63,9 +63,10 @@ function loadUser(req, _res, next) {
     // Read the user fresh from the database rather than trusting the token's
     // contents. A token issued last week may name a role that has since
     // changed, or a user who has since been deleted.
-    const user = get('SELECT id, username, email, phone, state, role FROM users WHERE id = ?', [
-      payload.sub,
-    ]);
+    const user = await get(
+      'SELECT id, username, email, phone, state, role FROM users WHERE id = ?',
+      [payload.sub]
+    );
     if (user) req.user = user;
   } catch {
     // Expired or tampered with. Treat as logged out.
