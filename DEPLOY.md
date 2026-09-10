@@ -37,7 +37,7 @@ Worth doing, and it takes a minute:
 DATABASE_URL="your-connection-string" npm test
 ```
 
-The same 25 tests now run against real PostgreSQL. This is the more meaningful
+The same 31 tests now run against real PostgreSQL. This is the more meaningful
 run: on SQLite in one process Node handles the two racing checkouts one after
 another, but PostgreSQL executes them genuinely in parallel. If the atomic
 `UPDATE` were wrong, this is where it would show.
@@ -130,10 +130,25 @@ in 2027, so plan for the expiry date or use it only for experimenting.
 | `DEMO_LOGIN` | Optional | `off` removes the demo button entirely. |
 | `SEED_ON_BOOT` | Optional | `off` stops the first-boot catalogue load. |
 | `PG_SSL_NO_VERIFY` | Rarely | `1` if your provider uses a self-signed certificate. Neon and Supabase do not. |
+| `PAYMENT_SANDBOX` | Optional | `on` enables the built-in simulator. Ignored when Razorpay keys are set. |
 | `RAZORPAY_KEY_ID` | Optional | Test key from Razorpay. Without it, no Pay button. |
 | `RAZORPAY_KEY_SECRET` | Optional | The matching secret. Never goes to the browser. |
 
-## Switching payments on
+## Switching payments on, without a gateway account
+
+Razorpay asks for identity documents - PAN and business details - before it
+will issue keys, including test keys. That is a lot to hand over so a demo
+shop can show a green tick, and it is not needed.
+
+Set `PAYMENT_SANDBOX=on` instead and the built-in simulator takes over. The
+checkout can be clicked through end to end, and every screen says plainly that
+it is simulated. Nothing about it is hidden: the button, the payment window
+and the receipt all say so, and the database records which provider was used.
+
+The signature verification is the same code the real gateway path uses, so the
+part worth showing an interviewer is genuinely exercised.
+
+## Switching on the real Razorpay
 
 Payments are off until both Razorpay keys are set, and the shop works fine
 without them - orders simply stay `pending`.

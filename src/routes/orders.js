@@ -185,7 +185,8 @@ router.post('/', async (req, res, next) => {
 router.get('/', async (req, res, next) => {
   try {
     const orders = await all(
-      `SELECT id, status, total_paise, placed_at, razorpay_payment_id, paid_at
+      `SELECT id, status, total_paise, placed_at,
+              razorpay_payment_id, paid_at, payment_provider
        FROM orders WHERE user_id = ? ORDER BY placed_at DESC, id DESC`,
       [req.user.id]
     );

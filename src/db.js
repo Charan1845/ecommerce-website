@@ -199,6 +199,7 @@ const LATER_COLUMNS = [
   // database is would come back as a string in one place and a Date in
   // another, and nothing would tell you which.
   { table: 'orders', column: 'paid_at', sqlite: 'TEXT', pg: 'TIMESTAMPTZ' },
+  { table: 'orders', column: 'payment_provider', sqlite: 'TEXT', pg: 'VARCHAR(20)' },
 ];
 
 async function migrate() {

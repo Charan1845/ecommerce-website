@@ -77,7 +77,10 @@ CREATE TABLE IF NOT EXISTS orders (
   -- order from their dashboard and vice versa. Null until payment is started.
   razorpay_order_id   VARCHAR(80),
   razorpay_payment_id VARCHAR(80),
-  paid_at             TIMESTAMPTZ
+  paid_at             TIMESTAMPTZ,
+  -- 'razorpay' or 'sandbox'. Recorded so a receipt can never quietly imply
+  -- money moved when it was the simulator.
+  payment_provider    VARCHAR(20)
 );
 
 CREATE INDEX IF NOT EXISTS idx_orders_user ON orders (user_id, placed_at DESC);

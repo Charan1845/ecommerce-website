@@ -4,16 +4,23 @@
  * Orders are created as 'pending' by checkout. These routes are what turns a
  * pending order into a paid one, and nothing else in the app is allowed to
  * make that change.
+ *
+ * Note how little of this cares which gateway is in use. The shop asks for a
+ * payment order, hands the browser an id, and later checks a signature. Only
+ * src/payments.js knows whether that was Razorpay or the sandbox.
  */
 
 const express = require('express');
 const { get, run } = require('../db');
 const { requireAuth } = require('../auth');
+const sandboxGateway = require('../sandbox-gateway');
 const {
+  provider,
   isEnabled,
+  isSimulated,
   isTestMode,
   keyId,
-  createRazorpayOrder,
+  createPaymentOrder,
   verifyPaymentSignature,
 } = require('../payments');
 
@@ -22,15 +29,17 @@ const router = express.Router();
 /**
  * GET /api/payments/config
  *
- * The page asks whether paying is possible before showing a Pay button.
- * Returns the PUBLIC key only - the secret never leaves the server, and the
- * public key is meant to be in the page, which is why Razorpay gives you two.
+ * The page asks whether paying is possible before showing a Pay button, and
+ * what to say about it. Returns the PUBLIC key only - the secret never leaves
+ * the server, which is why Razorpay gives you two of them.
  */
 router.get('/config', (_req, res) => {
   res.json({
     enabled: isEnabled(),
-    test_mode: isTestMode(),
-    key_id: isEnabled() ? keyId() : null,
+    provider: provider(),
+    simulated: isSimulated(),
+    test_mode: isEnabled() ? isTestMode() : false,
+    key_id: provider() === 'razorpay' ? keyId() : null,
   });
 });
 
@@ -66,7 +75,7 @@ router.post('/orders/:id', async (req, res, next) => {
     }
 
     // The amount comes from our row, never from the request body.
-    const created = await createRazorpayOrder({
+    const created = await createPaymentOrder({
       amountPaise: order.total_paise,
       receipt: `devgear-${order.id}`,
       notes: { devgear_order_id: String(order.id), username: req.user.username },
@@ -75,7 +84,9 @@ router.post('/orders/:id', async (req, res, next) => {
     await run('UPDATE orders SET razorpay_order_id = ? WHERE id = ?', [created.id, order.id]);
 
     return res.json({
-      key_id: keyId(),
+      provider: provider(),
+      simulated: isSimulated(),
+      key_id: provider() === 'razorpay' ? keyId() : null,
       test_mode: isTestMode(),
       razorpay_order_id: created.id,
       amount_paise: order.total_paise,
@@ -87,6 +98,33 @@ router.post('/orders/:id', async (req, res, next) => {
       },
     });
   } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /api/payments/sandbox/authorize
+ *
+ * Stands in for the customer completing payment inside a real gateway's
+ * window. Only exists in sandbox mode - with Razorpay configured this is a
+ * 404, because the real gateway does this part and it is not ours to do.
+ */
+router.post('/sandbox/authorize', (req, res, next) => {
+  try {
+    if (provider() !== 'sandbox') {
+      return res.status(404).json({ error: 'No such endpoint.' });
+    }
+
+    const result = sandboxGateway.authorize({
+      orderId: req.body?.payment_order_id,
+      succeed: req.body?.outcome !== 'failure',
+    });
+
+    return res.json(result);
+  } catch (err) {
+    if (err.status) {
+      return res.status(err.status).json({ error: err.message, declined: Boolean(err.declined) });
+    }
     return next(err);
   }
 });
@@ -125,9 +163,9 @@ router.post('/verify', async (req, res, next) => {
       return res.json({ status: 'paid', already: true });
     }
 
-    // The order id must be the one we asked Razorpay to create for this order.
-    // Without this check, a genuine signature from a different, cheaper order
-    // could be replayed to mark an expensive one paid.
+    // The payment order must be the one we asked the gateway to create for
+    // this order. Without this check, a genuine signature from a different,
+    // cheaper order could be replayed to mark an expensive one paid.
     if (!order.razorpay_order_id || order.razorpay_order_id !== razorpayOrderId) {
       return res.status(400).json({ error: 'That payment does not belong to this order.' });
     }
@@ -143,18 +181,20 @@ router.post('/verify', async (req, res, next) => {
     }
 
     // Only mark it paid if it is still pending, and say so by row count.
+    // The provider is recorded too, so a receipt never hides the fact that it
+    // was paid through a simulator.
     const updated = await run(
       `UPDATE orders
-       SET status = 'paid', razorpay_payment_id = ?, paid_at = ?
+       SET status = 'paid', razorpay_payment_id = ?, paid_at = ?, payment_provider = ?
        WHERE id = ? AND status = 'pending'`,
-      [razorpayPaymentId, new Date().toISOString(), order.id]
+      [razorpayPaymentId, new Date().toISOString(), provider(), order.id]
     );
 
     if (updated.changes === 0) {
       return res.status(409).json({ error: 'That order could not be marked paid.' });
     }
 
-    return res.json({ status: 'paid', order_id: order.id });
+    return res.json({ status: 'paid', order_id: order.id, provider: provider() });
   } catch (err) {
     return next(err);
   }

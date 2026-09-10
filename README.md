@@ -30,7 +30,7 @@ Running the seed again resets every product's stock to its starting number.
 Customers, carts and orders are left alone.
 
 ```bash
-npm test         # 25 tests
+npm test         # 31 tests
 npm run images   # redraw the 48 product illustrations
 ```
 
@@ -156,10 +156,37 @@ separately. A shop with real customers would keep them in Redis.
 
 ## Paying
 
-Razorpay, in test mode. Switched off unless `RAZORPAY_KEY_ID` and
-`RAZORPAY_KEY_SECRET` are set - with no keys the Pay button simply never
-appears and orders stay `pending`, which is exactly how the shop behaved
-before payments existed.
+Two providers, chosen by configuration, and the shop's own code cannot tell
+them apart:
+
+| Setting | Provider | What it is |
+|---|---|---|
+| Both `RAZORPAY_*` keys set | `razorpay` | The real gateway, in test mode |
+| `PAYMENT_SANDBOX=on`, no keys | `sandbox` | A simulator that lives in this repository |
+| Neither | off | No Pay button; orders stay `pending` |
+
+**The sandbox is a simulator and the site says so, in those words.** Razorpay
+will not issue even test-mode keys without identity documents, which is a lot
+to hand a payments company so a student project can show a green tick. The
+simulator stands in for them, and it is labelled on the button, inside its own
+window, and on the receipt - the `payment_provider` column records which one
+was used, so a paid order can never quietly imply money moved.
+
+What is genuinely demonstrated, and what is not:
+
+- **Real** - the verification. The shop recomputes an HMAC signature and
+  refuses anything that does not match, using the same code either way. The
+  tests forge signatures, tamper with one character, and replay real
+  signatures from other orders. All are refused.
+- **Fake** - the counterparty. With Razorpay a valid signature proves the
+  message came from Razorpay, because only they know their secret. In the
+  sandbox one process plays both sides, so it proves only that the message
+  came from us. That is the one thing a simulator cannot fake, and it is why
+  the sandbox must never be used to take money.
+
+Real keys always win: with `RAZORPAY_*` configured the simulator's endpoint
+returns 404, so a live shop cannot have a working simulator sitting next to
+it. There is a test for that.
 
 **This server never sees a card number.** Card details are typed into
 Razorpay's own window, served from Razorpay's domain, and go straight to them.
@@ -216,7 +243,8 @@ src/
   schema.pg.sql        the same tables for PostgreSQL
   seed.js              loads data/products.json, creates the owner and demo accounts
   auth.js              hashing, login cookie, requireAuth / requireOwner
-  payments.js          Razorpay: create a payment order, verify a signature
+  payments.js          picks a provider, creates payment orders, verifies signatures
+  sandbox-gateway.js   the pretend gateway, kept away from the shop's own code
   rate-limit.js        slows down password guessing
   routes/              auth, products, cart, orders, admin, payments
 public/                the pages the browser loads
@@ -254,6 +282,7 @@ DEPLOY.md              step by step, start to finish
 | GET | `/api/payments/config` | anyone |
 | POST | `/api/payments/orders/:id` | logged in, own orders only |
 | POST | `/api/payments/verify` | logged in, own orders only |
+| POST | `/api/payments/sandbox/authorize` | logged in; 404 unless in sandbox mode |
 
 ## Product images
 

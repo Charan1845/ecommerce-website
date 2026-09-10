@@ -26,7 +26,16 @@ const crypto = require('node:crypto');
 const { applySchema, get, all, run, close } = require('../src/db');
 const { seedProducts, seedDemo } = require('../src/seed');
 const { resetRateLimits } = require('../src/rate-limit');
+const sandboxGateway = require('../src/sandbox-gateway');
 const { createApp } = require('../src/app');
+
+// Importing src/seed pulls in dotenv, which loads the real .env - so
+// whatever is configured for development arrives here whether the tests want
+// it or not. Payment settings are decided per test, so clear them now, after
+// the imports have run.
+delete process.env.PAYMENT_SANDBOX;
+delete process.env.RAZORPAY_KEY_ID;
+delete process.env.RAZORPAY_KEY_SECRET;
 
 let server;
 let BASE;
@@ -550,6 +559,143 @@ test('an order that is already paid cannot be paid again', async () => {
     // But starting a fresh payment for it must not be allowed.
     const restart = await customer.call('POST', '/api/payments/orders/' + orderId);
     assert.equal(restart.status, 409);
+  });
+});
+
+/** Turn the simulated gateway on for one test, and always turn it back off. */
+async function withSandbox(fn) {
+  delete process.env.RAZORPAY_KEY_ID;
+  delete process.env.RAZORPAY_KEY_SECRET;
+  process.env.PAYMENT_SANDBOX = 'on';
+  sandboxGateway.reset();
+  try {
+    return await fn();
+  } finally {
+    delete process.env.PAYMENT_SANDBOX;
+    sandboxGateway.reset();
+  }
+}
+
+test('the simulated gateway says out loud that it is simulated', async () => {
+  await withSandbox(async () => {
+    const config = await (await fetch(BASE + '/api/payments/config')).json();
+    assert.equal(config.enabled, true);
+    assert.equal(config.provider, 'sandbox');
+    assert.equal(config.simulated, true, 'the page must be able to label it honestly');
+    assert.equal(config.key_id, null, 'there is no gateway key, because there is no gateway');
+  });
+});
+
+test('a simulated payment goes through and is recorded as simulated', async () => {
+  await withSandbox(async () => {
+    const { customer, orderId } = await customerWithOrder('uma_sandbox', 26);
+
+    const start = await customer.call('POST', '/api/payments/orders/' + orderId);
+    assert.equal(start.status, 200);
+    assert.equal(start.body.provider, 'sandbox');
+    assert.match(start.body.razorpay_order_id, /^sandbox_order_/);
+    assert.equal(start.body.amount_paise, 149900, 'the amount must come from our own row');
+
+    // The customer "completes payment" in the gateway's window.
+    const authorised = await customer.call('POST', '/api/payments/sandbox/authorize', {
+      payment_order_id: start.body.razorpay_order_id,
+      outcome: 'success',
+    });
+    assert.equal(authorised.status, 200);
+    assert.match(authorised.body.razorpay_payment_id, /^sandbox_pay_/);
+
+    const verified = await customer.call('POST', '/api/payments/verify', {
+      order_id: orderId,
+      razorpay_order_id: authorised.body.razorpay_order_id,
+      razorpay_payment_id: authorised.body.razorpay_payment_id,
+      razorpay_signature: authorised.body.razorpay_signature,
+    });
+    assert.equal(verified.status, 200);
+    assert.equal(verified.body.status, 'paid');
+
+    const row = await get('SELECT status, payment_provider FROM orders WHERE id = ?', [orderId]);
+    assert.equal(row.status, 'paid');
+    assert.equal(row.payment_provider, 'sandbox', 'a receipt must not hide that it was simulated');
+  });
+});
+
+test('the simulated gateway checks signatures as strictly as the real one', async () => {
+  await withSandbox(async () => {
+    const { customer, orderId } = await customerWithOrder('vik_forge', 29);
+
+    const start = await customer.call('POST', '/api/payments/orders/' + orderId);
+    const authorised = await customer.call('POST', '/api/payments/sandbox/authorize', {
+      payment_order_id: start.body.razorpay_order_id,
+      outcome: 'success',
+    });
+
+    // Same real payment, one character of the signature changed.
+    const tampered = authorised.body.razorpay_signature.replace(/.$/, (c) =>
+      c === 'a' ? 'b' : 'a'
+    );
+
+    const refused = await customer.call('POST', '/api/payments/verify', {
+      order_id: orderId,
+      razorpay_order_id: authorised.body.razorpay_order_id,
+      razorpay_payment_id: authorised.body.razorpay_payment_id,
+      razorpay_signature: tampered,
+    });
+    assert.equal(refused.status, 400, 'one wrong character must be enough to refuse it');
+
+    const still = await get('SELECT status FROM orders WHERE id = ?', [orderId]);
+    assert.equal(still.status, 'pending');
+  });
+});
+
+test('a simulated declined card leaves the order unpaid', async () => {
+  await withSandbox(async () => {
+    const { customer, orderId } = await customerWithOrder('wren_declined', 32);
+
+    const start = await customer.call('POST', '/api/payments/orders/' + orderId);
+    const declined = await customer.call('POST', '/api/payments/sandbox/authorize', {
+      payment_order_id: start.body.razorpay_order_id,
+      outcome: 'failure',
+    });
+
+    assert.equal(declined.status, 402);
+    assert.equal(declined.body.declined, true);
+
+    const row = await get('SELECT status FROM orders WHERE id = ?', [orderId]);
+    assert.equal(row.status, 'pending', 'a declined card must not mark an order paid');
+  });
+});
+
+test('the same simulated payment cannot be authorised twice', async () => {
+  await withSandbox(async () => {
+    const { customer, orderId } = await customerWithOrder('xena_replay', 34);
+
+    const start = await customer.call('POST', '/api/payments/orders/' + orderId);
+    const first = await customer.call('POST', '/api/payments/sandbox/authorize', {
+      payment_order_id: start.body.razorpay_order_id,
+      outcome: 'success',
+    });
+    assert.equal(first.status, 200);
+
+    const second = await customer.call('POST', '/api/payments/sandbox/authorize', {
+      payment_order_id: start.body.razorpay_order_id,
+      outcome: 'success',
+    });
+    assert.equal(second.status, 409);
+  });
+});
+
+test('the simulator disappears entirely when Razorpay keys are set', async () => {
+  await withPayments(async () => {
+    const config = await (await fetch(BASE + '/api/payments/config')).json();
+    assert.equal(config.provider, 'razorpay');
+    assert.equal(config.simulated, false);
+
+    const { customer } = await customerWithOrder('yash_real', 35);
+    const attempt = await customer.call('POST', '/api/payments/sandbox/authorize', {
+      payment_order_id: 'sandbox_order_whatever',
+      outcome: 'success',
+    });
+    assert.equal(attempt.status, 404, 'real keys must never sit next to a working simulator');
   });
 });
 
