@@ -302,13 +302,36 @@ headphones do not, and monitors scale with their inch size.
 
 All 48 come to about 290 KB, less than a single photograph.
 
-`scripts/fetch-photos.js` is a working attempt at real photographs from
-Wikimedia Commons, filtered to reusable licences. It is kept because it works,
-and abandoned because Commons is a photo archive rather than a catalogue: it
-returned ceramic mouse ornaments, a cat in front of a monitor, broken CRTs,
-macro shots of LCD pixels, and photographs of identifiable branded hardware -
-which would have reintroduced the exact problem the rename solved. Real
-product photography needs a stock library with an API key.
+## The photographs
+
+`scripts/fetch-photos.js` downloads one photograph per product from Pexels and
+records the photographer in `data/photo-credits.json`. The product page names
+them, and says plainly that these are stock photographs of similar hardware
+rather than of the product itself - which is true, since DevGear has never
+manufactured anything.
+
+Three filters, and the third is the interesting one.
+
+**Text filters** reject descriptions that name a real manufacturer, or that
+describe a person, a data centre or a row of CRTs from 1998.
+
+**A relevance rule** requires the description to mention the thing being sold,
+because "computer monitor" otherwise returns a photograph of cabling.
+
+**A person looking at all 48.** Text filters cannot see. A photograph of a
+Logitech MX Master described only as "a sleek black wireless mouse" passes
+every automated check and still puts a visible logi logo on a product called
+DevGear Glide - as do two pairs of Marshall headphones and an Audio-Technica.
+Those are listed in `data/photo-blocklist.json` with the reason, and the
+fetcher skips them for good.
+
+Photographs are also matched to what each product actually is, not taken in
+order: sorting by category alone gave a product called Earbuds a photograph of
+over-ear headphones.
+
+An earlier version used Wikimedia Commons, which needs no API key, and was
+abandoned - it is an archive rather than a catalogue, and returned ceramic
+mouse ornaments and a cat in front of a monitor. It is in the git history.
 
 ## Not done yet
 

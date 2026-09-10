@@ -203,7 +203,14 @@ input:focus, select:focus, textarea:focus {
   background: linear-gradient(135deg, #e2e8f0, #f1f5f9);
   border-bottom: 1px solid var(--line);
 }
-.thumb img { width: 100%; height: 100%; object-fit: contain; padding: 12px; }
+.thumb img { width: 100%; height: 100%; display: block; }
+
+/* Generated illustrations: shown whole, with space around them. */
+.thumb img.art { object-fit: contain; padding: 12px; }
+
+/* Photographs: fill the card. A photo letterboxed inside a card looks like a
+   mistake, and these are all landscape so the crop is safe. */
+.thumb img.photo { object-fit: cover; padding: 0; }
 .thumb .initials {
   font-size: 30px;
   font-weight: 700;
@@ -277,7 +284,7 @@ input:focus, select:focus, textarea:focus {
 /* ---------- product detail ---------- */
 
 .detail { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; align-items: start; }
-.detail .thumb { border-radius: var(--radius); border: 1px solid var(--line); }
+.detail .thumb { border-radius: var(--radius); border: 1px solid var(--line); overflow: hidden; }
 .detail h1 { margin-top: 6px; }
 .price-big { font-size: 30px; font-weight: 700; margin: 14px 0 6px; }
 .stock-line { margin-bottom: 18px; font-weight: 600; }

@@ -79,7 +79,13 @@ function initials(brand) {
 function thumbHtml(product, badge = true) {
   let inner;
   if (product.image) {
-    inner = `<img src="/images/products/${esc(product.image)}" alt="${esc(product.name)}"
+    // A photograph fills the card; a drawing sits inside it with room to
+    // breathe. Cropping an illustration cuts the product in half, and
+    // letterboxing a photograph leaves grey bands down the sides.
+    const kind = /\.svg$/i.test(product.image) ? 'art' : 'photo';
+
+    inner = `<img class="${kind}" src="/images/products/${esc(product.image)}"
+              alt="${esc(product.name)}" loading="lazy"
               onerror="this.replaceWith(Object.assign(document.createElement('span'),
                        {className:'initials', textContent:'${esc(initials(product.brand))}'}))">`;
   } else {
