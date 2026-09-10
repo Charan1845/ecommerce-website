@@ -431,10 +431,15 @@ mouse ornaments and a cat in front of a monitor. It is in the git history.
 
 ## Not done yet
 
-- **Webhooks.** Payment is confirmed by the browser reporting back. If someone
-  closes the tab at exactly the wrong moment, the money is taken but the order
-  stays `pending`. A real shop also listens to Razorpay's webhook, which
-  arrives server to server and does not care about the browser. The signature
-  checking is the same; it is the delivery that differs.
-- **Refunds and cancellation.** `cancelled` is an allowed status but nothing
-  sets it.
+Tracked as [issues](https://github.com/Charan1845/ecommerce-website/issues).
+The ones that matter most:
+
+- **Payment webhooks.** Payment is confirmed by the browser reporting back. If
+  someone closes the tab at the wrong moment the money is taken and the order
+  stays `pending`.
+- **Cancelling and refunds.** `cancelled` is an allowed status but nothing sets
+  it, and cancelling has to put the stock back - the checkout transaction in
+  reverse, with the same race to get right.
+- **The app and the database are on opposite sides of the Pacific.** Render in
+  Oregon, Neon in Singapore: about 350ms of every page load is travel.
+- **Order progress.** Nothing records that an order was packed or shipped.
