@@ -1,0 +1,182 @@
+# DevGear
+
+A small online shop for computer accessories - keyboards, mice, headsets and
+monitors. Express REST API, plain HTML/CSS/JavaScript front end, SQLite while
+developing.
+
+It is a demo store. No payment is taken and no order is fulfilled.
+
+## What it does
+
+- Browse 48 products across 4 categories, with search, sorting and category filters
+- Sign up and log in
+- Add to cart, change quantities, remove items
+- Place an order and see your own order history
+- A shop owner account that can adjust stock and see every order
+
+## Running it
+
+```bash
+npm install
+npm run seed     # loads the 48 products and creates the owner account
+npm run dev      # http://localhost:3000
+```
+
+`npm run seed` prints the owner's password once. It is generated randomly
+unless you set `OWNER_PASSWORD` in a `.env` file, so no password is ever
+committed to this repository.
+
+Running the seed again resets every product's stock to its starting number.
+Customers, carts and orders are left alone.
+
+```bash
+npm test         # 17 tests
+npm run images   # redraw the 48 product illustrations
+```
+
+## Getting in
+
+The shop is behind the login. Opening any page while logged out sends you to
+the login screen, and you land back on the page you wanted once you are in.
+
+The seed creates two accounts:
+
+- **owner** - password printed once when you seed. Can change stock and see
+  every order.
+- **demo** / `demo1234` - an ordinary customer, and the login page has a
+  button that signs you in as it with one click. It exists so somebody can
+  look around without making an account.
+
+The demo account is deliberately a plain customer. Its password is public, so
+it must not be able to touch stock or read anyone else's orders - there are
+tests for both. Deploy with `DEMO_LOGIN=off` and the button disappears.
+
+## The part worth reading
+
+Most shopping-cart projects sell the last item in stock more than once. It is
+easy to miss, because it only happens when two people check out at the same
+moment.
+
+The obvious way to write checkout is:
+
+```js
+const product = getProduct(id);          // stock is 1
+if (product.stock >= quantity) {         // fine, says both requests
+  setStock(id, product.stock - quantity);
+}
+```
+
+Between the read and the write, a second request can do its own read. Both see
+one in stock, both decide it is fine, and the shop sells a mouse it does not
+have.
+
+This project does the check and the subtraction in one statement instead, so
+the database tests the condition at the moment it writes:
+
+```sql
+UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?
+```
+
+If it changed a row, the stock was there and is now ours. If it changed
+nothing, somebody else got there first - and we find that out by looking at
+how many rows changed, not by asking a second time.
+
+The whole checkout runs inside one transaction, so an order that fails halfway
+puts back any stock it had already taken. A test covers that case too.
+
+`tests/checkout.test.js` fires two checkouts for the same last item and asserts
+that exactly one succeeds, that stock lands on zero rather than minus one, and
+that only one order exists afterwards.
+
+**An honest limit:** those two requests are handled by one Node process
+holding one SQLite connection, so Node runs them one after the other. The test
+proves the logic is right; it does not reproduce true parallel execution. The
+single atomic `UPDATE` is what makes it correct once it is on PostgreSQL with
+several workers, where requests really do overlap.
+
+## Two rules about copying data
+
+The cart stores **no price**. It points at the product, and the price is read
+live, so a price change shows up straight away. Nothing has been bought yet, so
+there is nothing to freeze.
+
+An order stores **the price and the product name**. An order is a historical
+record: if the shop raises the price next month, the receipt must still say
+what was actually paid, and it has to survive the product being renamed or
+removed.
+
+A cart points at a product. An order remembers a product.
+
+## Money
+
+Every amount is a whole number of paise. Rs 7,499 is stored as `749900`.
+Computers cannot represent 0.1 exactly, so money held as a decimal quietly
+drifts. Whole paise cannot drift. `rupees()` in `public/js/common.js` is the
+only place it turns back into something with a decimal point, and it groups
+digits the Indian way - 12,34,567 rather than 1,234,567.
+
+## Passwords
+
+Passwords are never stored. A bcrypt hash is, and a hash cannot be turned back
+into the password. Logging in hashes what you typed and compares the hashes.
+If this database ever leaked, nobody would get anyone's password out of it.
+
+## Layout
+
+```
+server.js              starts the server
+src/
+  app.js               builds the Express app (kept separate so tests can start their own)
+  db.js                the database connection and the query helpers
+  schema.sql           the tables
+  seed.js              loads data/products.json, creates the owner
+  auth.js              hashing, login cookie, requireAuth / requireOwner
+  routes/              auth, products, cart, orders, admin
+public/                the pages the browser loads
+data/products.json     the catalogue
+tests/                 checkout, stock, pricing, access control
+```
+
+## API
+
+| Method | Path | Who |
+|---|---|---|
+| POST | `/api/auth/signup` | anyone |
+| POST | `/api/auth/login` | anyone |
+| POST | `/api/auth/logout` | anyone |
+| GET | `/api/auth/me` | anyone |
+| GET | `/api/auth/demo` | anyone |
+| POST | `/api/auth/demo-login` | anyone |
+| GET | `/api/products` | logged in |
+| GET | `/api/products/:id` | logged in |
+| GET | `/api/cart` | logged in |
+| POST | `/api/cart` | logged in |
+| PATCH | `/api/cart/:productId` | logged in |
+| DELETE | `/api/cart/:productId` | logged in |
+| POST | `/api/orders` | logged in |
+| GET | `/api/orders` | logged in |
+| GET | `/api/orders/:id` | logged in, own orders only |
+| GET | `/api/admin/stats` | owner |
+| GET | `/api/admin/products` | owner |
+| PATCH | `/api/admin/products/:id/stock` | owner |
+| GET | `/api/admin/orders` | owner |
+
+## Product images
+
+The 48 illustrations in `public/images/products/` are generated by
+`scripts/make-images.js`, not photographed. Brand product photography belongs
+to the brands, and a demo shop has no claim on it - so each product gets a
+drawing of the right kind of thing in that brand's colour. A full-size
+keyboard has a number pad and a 60% one does not, gaming mice have side
+buttons, wired things have cables, gaming headsets have a boom mic and plain
+headphones do not, and monitors scale with their inch size.
+
+All 48 come to 292 KB, less than a single photograph.
+
+## Not done yet
+
+- **Payment.** Orders are recorded as `pending`. The `status` column is already
+  there so a gateway can flip it to `paid` later without changing anything
+  else. Card details would go straight from the browser to the gateway - this
+  server would never see them.
+- **Deployment.** Still runs locally only.
