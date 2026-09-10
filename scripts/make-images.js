@@ -23,30 +23,14 @@ const H = 600;
 
 /** A colour per brand, so the shelf does not look like one product repeated. */
 const BRAND_COLOR = {
-  Keychron: '#f0a500',
-  Logitech: '#00b8fc',
-  Zebronics: '#e8112d',
-  Redragon: '#c8102e',
-  Dell: '#0076ce',
-  Corsair: '#facc15',
-  'Ant Esports': '#ff4d00',
-  'Cosmic Byte': '#8b5cf6',
-  HP: '#0096d6',
-  Razer: '#44d62c',
-  Sony: '#1a1a1a',
-  boAt: '#ff2e2e',
-  OnePlus: '#eb0028',
-  HyperX: '#e6162d',
-  JBL: '#ff6600',
-  Sennheiser: '#0a5c36',
-  LG: '#a50034',
-  Samsung: '#1428a0',
-  Acer: '#83b81a',
-  BenQ: '#8b5cf6',
-  ASUS: '#00539b',
-  MSI: '#ff0000',
-  'Western Digital': '#0057b8',
-  SanDisk: '#e30613',
+  // One colour per DevGear line, so a shelf of products does not read as the
+  // same object repeated twelve times.
+  'DevGear Forge': '#f97316', // mechanical and gaming
+  'DevGear Glide': '#0d9488', // mice
+  'DevGear Echo': '#a855f7', // audio
+  'DevGear Vista': '#2563eb', // monitors
+  'DevGear Slate': '#64748b', // slim office gear
+  'DevGear Core': '#0ea5e9', // budget range
 };
 
 const BODY_DARK = '#1f2937';
@@ -60,9 +44,9 @@ const color = (brand) => BRAND_COLOR[brand] || '#64748b';
 /* ------------------------------------------------------------------ */
 
 function keyboardLayout(name) {
-  if (/mini|mk1200/i.test(name)) return { cols: 14, rows: 5, width: 520 };
-  if (/k2 |k8 |kumara|tenkeyless|tkl/i.test(name)) return { cols: 16, rows: 5, width: 590 };
-  if (/k380|combo/i.test(name)) return { cols: 15, rows: 5, width: 540 };
+  if (/mini|60%/i.test(name)) return { cols: 14, rows: 5, width: 520 };
+  if (/tkl|tenkeyless|hot-swap|84/i.test(name)) return { cols: 16, rows: 5, width: 590 };
+  if (/combo|multi-device|low-profile/i.test(name)) return { cols: 15, rows: 5, width: 540 };
   return { cols: 21, rows: 5, width: 660 }; // full size, with a number pad
 }
 
@@ -102,7 +86,7 @@ function keyboard(product) {
     }
   }
 
-  const backlight = /rgb|backlit|backlight|led|firefly|prodigy/i.test(product.name + product.description)
+  const backlight = /rgb|backlit|backlight|lighting|firefly|prodigy/i.test(product.name + product.description)
     ? `<rect x="${x}" y="${y + height - 6}" width="${width}" height="10" rx="5" fill="${accent}" opacity="0.55"/>`
     : '';
 
@@ -125,8 +109,8 @@ function keyboard(product) {
 
 function mouse(product) {
   const accent = color(product.brand);
-  const gaming = /gaming|deathadder|viper|g502|cobra|katar|transformer|gm320/i.test(product.name);
-  const compact = /pebble|m235|ms116|x1000|m350/i.test(product.name);
+  const gaming = /gaming|strike|apex|cobra|lumen|feather/i.test(product.name);
+  const compact = /pebble|lite|office|wired optical/i.test(product.name);
 
   const bodyW = compact ? 190 : 230;
   const bodyH = compact ? 300 : 360;
@@ -192,7 +176,7 @@ function earbuds(product) {
 
 function headphones(product) {
   const accent = color(product.brand);
-  const boom = /gaming|headset|mic|h390|h520|stinger|blackshark|hs55|immortal/i.test(product.name);
+  const boom = /gaming|headset|mic|call|stinger|shark|immortal|stereo/i.test(product.name);
 
   const cx = W / 2;
   const cy = H / 2 + 20;
@@ -230,7 +214,7 @@ function headphones(product) {
 function monitor(product) {
   const accent = color(product.brand);
   const inches = Number((product.name.match(/(\d{2})-inch/) || [])[1] || 24);
-  const gaming = /gaming|nitro|tuf|odyssey|165hz|240hz/i.test(product.name + product.description);
+  const gaming = /gaming|nitro|arena|odyssey|165hz|240hz/i.test(product.name + product.description);
 
   // Bigger screens are drawn bigger, within reason.
   const scale = 0.82 + (inches - 19) / 40;
