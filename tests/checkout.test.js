@@ -24,6 +24,7 @@ const assert = require('node:assert/strict');
 
 const { applySchema, get, all, run, close } = require('../src/db');
 const { seedProducts, seedDemo } = require('../src/seed');
+const { resetRateLimits } = require('../src/rate-limit');
 const { createApp } = require('../src/app');
 
 let server;
@@ -66,6 +67,9 @@ async function newCustomer(username) {
     const text = await res.text();
     return { status: res.status, body: text ? JSON.parse(text) : null };
   }
+
+  // Every test signs people up; the signup limit is not what is under test.
+  resetRateLimits();
 
   const signup = await call('POST', '/api/auth/signup', {
     username,
@@ -340,6 +344,50 @@ test('the catalogue data is behind the login too', async () => {
 
   const one = await fetch(`${BASE}/api/products/13`);
   assert.equal(one.status, 401);
+});
+
+test('password guessing gets locked out', async () => {
+  resetRateLimits();
+
+  const wrong = () =>
+    fetch(`${BASE}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ username: 'owner', password: 'not-the-password' }),
+    });
+
+  // The first several wrong guesses are simply rejected.
+  for (let i = 0; i < 8; i++) {
+    const res = await wrong();
+    assert.equal(res.status, 401, `attempt ${i + 1} should be a plain rejection`);
+  }
+
+  // After that the door closes, without the server even checking.
+  const blocked = await wrong();
+  assert.equal(blocked.status, 429);
+  assert.ok(blocked.headers.get('retry-after'), 'should say how long to wait');
+
+  resetRateLimits();
+});
+
+test('a correct password still works after a couple of typos', async () => {
+  resetRateLimits();
+
+  const login = (password) =>
+    fetch(`${BASE}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ username: 'demo', password }),
+    });
+
+  // Somebody mistyping their own password must not be locked out.
+  assert.equal((await login('wrong-one')).status, 401);
+  assert.equal((await login('wrong-again')).status, 401);
+
+  const ok = await login(process.env.DEMO_PASSWORD || 'demo1234');
+  assert.equal(ok.status, 200, 'the real password must still be accepted');
+
+  resetRateLimits();
 });
 
 test('checkout refuses a bad pincode', async () => {

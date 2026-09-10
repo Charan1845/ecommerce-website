@@ -30,7 +30,7 @@ Running the seed again resets every product's stock to its starting number.
 Customers, carts and orders are left alone.
 
 ```bash
-npm test         # 17 tests
+npm test         # 19 tests
 npm run images   # redraw the 48 product illustrations
 ```
 
@@ -144,6 +144,15 @@ digits the Indian way - 12,34,567 rather than 1,234,567.
 Passwords are never stored. A bcrypt hash is, and a hash cannot be turned back
 into the password. Logging in hashes what you typed and compares the hashes.
 If this database ever leaked, nobody would get anyone's password out of it.
+
+Storing them safely is only half of it, though. The shop is public and the
+owner's username is not a secret, so the login also counts failures: eight
+wrong guesses from one address and that address waits fifteen minutes. A
+success clears the count, so mistyping your own password twice does nothing.
+
+The counters live in memory, which is the honest size of the problem for one
+small server - they reset on restart, and several machines would each count
+separately. A shop with real customers would keep them in Redis.
 
 ## Layout
 

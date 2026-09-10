@@ -1,7 +1,8 @@
 /** REST routes for signing up, logging in and logging out. */
 
 const express = require('express');
-const { get, run } = require('../db');
+const { get } = require('../db');
+const { rateLimit } = require('../rate-limit');
 const {
   hashPassword,
   verifyPassword,
@@ -11,6 +12,22 @@ const {
 } = require('../auth');
 
 const router = express.Router();
+
+// Guessing a password is the attack this shop is actually exposed to: the
+// owner username is not a secret and the login page is public.
+const loginLimit = rateLimit({
+  max: 8,
+  windowMs: 15 * 60 * 1000,
+  message: 'Too many failed login attempts. Wait 15 minutes and try again.',
+});
+
+// Signing up is not an attack, but without a limit one script could fill the
+// users table overnight.
+const signupLimit = rateLimit({
+  max: 15,
+  windowMs: 60 * 60 * 1000,
+  message: 'Too many accounts created from here. Try again later.',
+});
 
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,30}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -62,7 +79,7 @@ function validateSignup(body) {
   return { errors, values: { username, email, password, phone, state } };
 }
 
-router.post('/signup', async (req, res, next) => {
+router.post('/signup', signupLimit, async (req, res, next) => {
   try {
     const { errors, values } = validateSignup(req.body || {});
     if (Object.keys(errors).length) {
@@ -100,7 +117,7 @@ router.post('/signup', async (req, res, next) => {
   }
 });
 
-router.post('/login', async (req, res, next) => {
+router.post('/login', loginLimit, async (req, res, next) => {
   try {
     const identifier = (req.body?.username || '').trim();
     const password = req.body?.password || '';

@@ -47,6 +47,15 @@ function requireLoginForPages(req, res, next) {
 function createApp() {
   const app = express();
 
+  // Behind Render, Cloud Run or any proxy, the client's real address arrives
+  // in X-Forwarded-For. Without this every request looks like it came from
+  // the proxy, which would let one attacker's failures lock out everybody.
+  // Only trust it when we are actually deployed - locally it would let anyone
+  // spoof their address and slip past the rate limit.
+  if (process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1);
+  }
+
   app.use(express.json());
   app.use(cookieParser());
 
