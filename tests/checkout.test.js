@@ -38,6 +38,11 @@ delete process.env.PAYMENT_SANDBOX;
 delete process.env.RAZORPAY_KEY_ID;
 delete process.env.RAZORPAY_KEY_SECRET;
 
+// Without this the suite would send real email. Every reset test uses an
+// @example.com address, so a configured provider would either bounce them or,
+// worse, deliver them somewhere. Tests get the link handed back instead.
+delete process.env.RESEND_API_KEY;
+
 let server;
 let BASE;
 
