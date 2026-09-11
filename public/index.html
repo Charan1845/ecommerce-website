@@ -3,6 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    // Decide the theme before anything paints, so there's no light-then-dark
+    // flash. The toggle button itself lives in common.js.
+    (function () {
+      try {
+        var saved = localStorage.getItem('theme');
+        var dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+        if (dark) document.documentElement.dataset.theme = 'dark';
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <title>DevGear - Keyboards, Mouse, Headsets and Monitors</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/css/style.css">
@@ -11,13 +25,13 @@
   <header class="site-header">
     <div class="wrap">
       <a class="logo" href="/">Dev<span>Gear</span></a>
-      <nav id="nav"></nav>
+      <nav id="nav"><a href="/">Shop</a></nav>
     </div>
   </header>
 
   <main class="wrap">
     <h1>Desk and computer gear</h1>
-    <p class="subtitle" id="count">Loading the catalogue…</p>
+    <p class="subtitle" id="count"><span class="skeleton-text skeleton-fill">Loading products…</span></p>
 
     <div id="notice" class="notice" hidden></div>
 
@@ -33,7 +47,75 @@
       </select>
     </div>
 
-    <div class="grid" id="grid"></div>
+    <!-- Skeleton cards fill the grid immediately, so the first paint looks
+         like the shop loading rather than an empty page. loadProducts()
+         in shop.js replaces this whole block once real data arrives. -->
+    <div class="grid" id="grid">
+      <div class="card skeleton" aria-hidden="true">
+        <div class="thumb skeleton-fill"></div>
+        <div class="card-body">
+          <div class="skeleton-line skeleton-fill" style="width:35%"></div>
+          <div class="skeleton-line skeleton-fill" style="width:85%"></div>
+          <div class="skeleton-line price skeleton-fill"></div>
+        </div>
+      </div>
+      <div class="card skeleton" aria-hidden="true">
+        <div class="thumb skeleton-fill"></div>
+        <div class="card-body">
+          <div class="skeleton-line skeleton-fill" style="width:35%"></div>
+          <div class="skeleton-line skeleton-fill" style="width:85%"></div>
+          <div class="skeleton-line price skeleton-fill"></div>
+        </div>
+      </div>
+      <div class="card skeleton" aria-hidden="true">
+        <div class="thumb skeleton-fill"></div>
+        <div class="card-body">
+          <div class="skeleton-line skeleton-fill" style="width:35%"></div>
+          <div class="skeleton-line skeleton-fill" style="width:85%"></div>
+          <div class="skeleton-line price skeleton-fill"></div>
+        </div>
+      </div>
+      <div class="card skeleton" aria-hidden="true">
+        <div class="thumb skeleton-fill"></div>
+        <div class="card-body">
+          <div class="skeleton-line skeleton-fill" style="width:35%"></div>
+          <div class="skeleton-line skeleton-fill" style="width:85%"></div>
+          <div class="skeleton-line price skeleton-fill"></div>
+        </div>
+      </div>
+      <div class="card skeleton" aria-hidden="true">
+        <div class="thumb skeleton-fill"></div>
+        <div class="card-body">
+          <div class="skeleton-line skeleton-fill" style="width:35%"></div>
+          <div class="skeleton-line skeleton-fill" style="width:85%"></div>
+          <div class="skeleton-line price skeleton-fill"></div>
+        </div>
+      </div>
+      <div class="card skeleton" aria-hidden="true">
+        <div class="thumb skeleton-fill"></div>
+        <div class="card-body">
+          <div class="skeleton-line skeleton-fill" style="width:35%"></div>
+          <div class="skeleton-line skeleton-fill" style="width:85%"></div>
+          <div class="skeleton-line price skeleton-fill"></div>
+        </div>
+      </div>
+      <div class="card skeleton" aria-hidden="true">
+        <div class="thumb skeleton-fill"></div>
+        <div class="card-body">
+          <div class="skeleton-line skeleton-fill" style="width:35%"></div>
+          <div class="skeleton-line skeleton-fill" style="width:85%"></div>
+          <div class="skeleton-line price skeleton-fill"></div>
+        </div>
+      </div>
+      <div class="card skeleton" aria-hidden="true">
+        <div class="thumb skeleton-fill"></div>
+        <div class="card-body">
+          <div class="skeleton-line skeleton-fill" style="width:35%"></div>
+          <div class="skeleton-line skeleton-fill" style="width:85%"></div>
+          <div class="skeleton-line price skeleton-fill"></div>
+        </div>
+      </div>
+    </div>
   </main>
 
   <footer class="site-footer">
