@@ -429,17 +429,21 @@ An earlier version used Wikimedia Commons, which needs no API key, and was
 abandoned - it is an archive rather than a catalogue, and returned ceramic
 mouse ornaments and a cat in front of a monitor. It is in the git history.
 
-## Not done yet
+## What is next
 
-Tracked as [issues](https://github.com/Charan1845/ecommerce-website/issues).
-The ones that matter most:
+The [roadmap](ROADMAP.md) has the reasoning; the
+[issues](https://github.com/Charan1845/ecommerce-website/issues) have the
+detail. It is organised around one idea rather than a list of features:
 
-- **Payment webhooks.** Payment is confirmed by the browser reporting back. If
-  someone closes the tab at the wrong moment the money is taken and the order
-  stays `pending`.
-- **Cancelling and refunds.** `cancelled` is an allowed status but nothing sets
-  it, and cancelling has to put the stock back - the checkout transaction in
-  reverse, with the same race to get right.
-- **The app and the database are on opposite sides of the Pacific.** Render in
-  Oregon, Neon in Singapore: about 350ms of every page load is travel.
-- **Order progress.** Nothing records that an order was packed or shipped.
+**Phase 1 — prove it stays right.** Stock becomes a ledger rather than a
+number, a job checks five invariants over real data and fails loudly when the
+books do not balance, and a load test puts two hundred buyers against four
+items in stock to see whether exactly four sell. The project already claims to
+be correct under concurrency; this is the part that keeps checking.
+
+**Phase 2 — money you can trust.** Payment confirmed by a webhook rather than
+by a browser that might close, and a refund path that returns stock honestly.
+
+**Phase 3 — fast, awake, and close to its data.** The app is in Oregon and its
+database is in Singapore, which costs about 350ms of every page load. The free
+instance sleeps. The images are three times larger than they are shown.
