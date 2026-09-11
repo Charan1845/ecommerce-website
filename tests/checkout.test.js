@@ -854,6 +854,62 @@ test('a customer who guesses the admin address is sent home', async () => {
   assert.equal(page.headers.get('location'), '/');
 });
 
+test('the owner can run the race on demand, and it cleans up after itself', async () => {
+  const productId = 21;
+  await run('UPDATE products SET stock = 7 WHERE id = ?', [productId]);
+
+  const ordersBefore = (await all('SELECT id FROM orders')).length;
+  const usersBefore = (await all('SELECT id FROM users')).length;
+
+  const owner = await ownerSession();
+  const result = await owner('POST', '/api/admin/race', { product_id: productId });
+
+  assert.equal(result.status, 200);
+
+  // The race itself behaved.
+  assert.equal(result.body.checks.exactly_one_winner, true);
+  assert.equal(result.body.checks.exactly_one_told_sold_out, true);
+  assert.equal(result.body.checks.stock_landed_on_zero, true);
+
+  const won = result.body.buyers.filter((b) => b.outcome === 'won');
+  const lost = result.body.buyers.filter((b) => b.outcome === 'lost');
+  assert.equal(won.length, 1);
+  assert.equal(lost.length, 1);
+  assert.match(lost[0].message, /sold out|Only 0 left/i);
+
+  // And it left the shop exactly as it found it.
+  const after = await get('SELECT stock FROM products WHERE id = ?', [productId]);
+  assert.equal(after.stock, 7, 'stock must be put back');
+
+  assert.equal((await all('SELECT id FROM orders')).length, ordersBefore, 'no orders left behind');
+  assert.equal((await all('SELECT id FROM users')).length, usersBefore, 'no accounts left behind');
+
+  const strays = await all("SELECT id FROM users WHERE username LIKE 'race_demo_%'");
+  assert.equal(strays.length, 0);
+});
+
+test('the race puts stock back even when the product was sold out', async () => {
+  const productId = 27;
+  await run('UPDATE products SET stock = 0 WHERE id = ?', [productId]);
+
+  const owner = await ownerSession();
+  const result = await owner('POST', '/api/admin/race', { product_id: productId });
+  assert.equal(result.status, 200);
+
+  const after = await get('SELECT stock FROM products WHERE id = ?', [productId]);
+  assert.equal(after.stock, 0, 'a sold-out product must go back to sold out');
+});
+
+test('a customer cannot run the race', async () => {
+  const shopper = await newCustomer('otto_race');
+
+  const refused = await shopper.call('POST', '/api/admin/race', { product_id: 21 });
+  assert.equal(refused.status, 403);
+
+  const list = await shopper.call('GET', '/api/admin/race');
+  assert.equal(list.status, 403);
+});
+
 test('checkout refuses a bad pincode', async () => {
   await run('UPDATE products SET stock = 5 WHERE id = 24');
 

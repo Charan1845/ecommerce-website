@@ -560,6 +560,51 @@ td.num, th.num { text-align: right; }
   word-break: break-all;
 }
 
+/* ---------- the two-buyers race ---------- */
+
+.race-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
+  margin: 18px 0;
+}
+
+.race-buyer {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 15px;
+  background: var(--card);
+}
+.race-buyer p { margin: 6px 0 0; font-size: 14px; color: var(--ink-soft); }
+
+.race-buyer.won { border-color: #86efac; background: #f0fdf4; }
+.race-buyer.lost { border-color: #fcd34d; background: #fffbeb; }
+.race-buyer.broke { border-color: #fca5a5; background: #fef2f2; }
+
+.race-buyer-name {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  font-weight: 700;
+  color: var(--ink-faint);
+}
+.race-verdict { font-size: 19px; font-weight: 700; margin-top: 2px; }
+.race-buyer.won .race-verdict { color: var(--good); }
+.race-buyer.lost .race-verdict { color: var(--warn); }
+.race-buyer.broke .race-verdict { color: var(--bad); }
+
+.race-order {
+  margin-top: 8px;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+.race-checks { list-style: none; margin: 0 0 4px; padding: 0; font-size: 14px; }
+.race-checks li { padding: 3px 0; }
+.race-checks li.ok { color: var(--good); }
+.race-checks li.bad { color: var(--bad); font-weight: 700; }
+
 /* ---------- footer ---------- */
 
 .site-footer {

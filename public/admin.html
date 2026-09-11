@@ -36,6 +36,7 @@
         <button type="button" class="active" data-section="orders">Orders</button>
         <button type="button" data-section="customers">Customers</button>
         <button type="button" data-section="stock">Stock</button>
+        <button type="button" data-section="race">Race demo</button>
       </div>
 
       <!-- orders -->
@@ -70,6 +71,37 @@
             <tbody id="customers"></tbody>
           </table>
         </div>
+      </section>
+
+      <!-- the two-buyers race -->
+      <section data-panel="race" hidden>
+        <div class="panel" style="margin-bottom:18px">
+          <h2 style="margin-top:0">Two buyers, one item left</h2>
+          <p style="color:var(--ink-soft); max-width:62ch">
+            Most shopping carts sell the last item in stock more than once. It
+            only happens when two people check out in the same instant, so it
+            almost never shows up by hand - which is exactly why it ships.
+          </p>
+          <p style="color:var(--ink-soft); max-width:62ch">
+            This runs that race for real: one item in stock, two buyers, both
+            starting in the same instant, through the same checkout the Place
+            Order button uses. Nothing is staged and nothing is slowed down -
+            run it twice and a different buyer wins.
+          </p>
+
+          <div class="toolbar" style="margin-bottom:0">
+            <select id="race-product" aria-label="Product to race on"></select>
+            <button class="btn" id="race-run">Run the race</button>
+          </div>
+
+          <p class="pay-note" style="margin-top:12px">
+            Safe to press on the live shop: the two buyers are throwaway
+            accounts, their orders are deleted afterwards, and the product's
+            stock is put back exactly as it was found.
+          </p>
+        </div>
+
+        <div id="race-result"></div>
       </section>
 
       <!-- stock -->

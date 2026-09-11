@@ -144,6 +144,98 @@ function productRow(p) {
     </tr>`;
 }
 
+
+/* ------------------------------------------------------------------ */
+/* the two-buyers race                                                 */
+/* ------------------------------------------------------------------ */
+
+function raceOutcome(buyer) {
+  const won = buyer.outcome === 'won';
+  const kind = won ? 'won' : buyer.outcome === 'lost' ? 'lost' : 'broke';
+
+  return `
+    <div class="race-buyer ${kind}">
+      <div class="race-buyer-name">${esc(buyer.buyer)}</div>
+      <div class="race-verdict">${won ? 'Got it' : buyer.outcome === 'lost' ? 'Turned away' : 'Error'}</div>
+      <p>${esc(buyer.message)}</p>
+      ${buyer.order_id ? `<div class="race-order">order #${buyer.order_id}</div>` : ''}
+    </div>`;
+}
+
+function raceResult(r) {
+  const allPassed = Object.values(r.checks).every(Boolean);
+
+  const checks = [
+    ['Exactly one buyer succeeded', r.checks.exactly_one_winner],
+    ['The other was told it had sold out', r.checks.exactly_one_told_sold_out],
+    ['Stock landed on zero, never below', r.checks.stock_landed_on_zero],
+  ]
+    .map(
+      ([label, ok]) =>
+        `<li class="${ok ? 'ok' : 'bad'}">${ok ? '✓' : '✗'} ${label}</li>`
+    )
+    .join('');
+
+  return `
+    <section class="panel">
+      <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:6px">
+        <h2 style="margin:0">${esc(r.product.brand)} ${esc(r.product.name)}</h2>
+        <span class="pill ${allPassed ? 'paid' : 'cancelled'}">
+          ${allPassed ? 'behaved correctly' : 'PROBLEM'}
+        </span>
+        <span style="margin-left:auto; color:var(--ink-soft)">
+          both finished in ${r.elapsed_ms} ms
+        </span>
+      </div>
+      <p style="color:var(--ink-soft); margin-top:0">
+        Started with 1 in stock. Both buyers wanted it.
+      </p>
+
+      <div class="race-grid">${r.buyers.map(raceOutcome).join('')}</div>
+
+      <ul class="race-checks">${checks}</ul>
+
+      <p class="pay-note">
+        Stock after the race: <strong>${r.stock_after}</strong>.
+        Put back to <strong>${r.stock_restored_to}</strong>, and both throwaway
+        accounts and their orders have been deleted.
+      </p>
+    </section>`;
+}
+
+async function loadRaceProducts() {
+  const { products } = await apiGet('/api/admin/race');
+  const select = document.getElementById('race-product');
+
+  select.innerHTML = products
+    .map(
+      (p) =>
+        `<option value="${p.id}">${esc(p.brand)} ${esc(p.name)} — ${p.stock} in stock</option>`
+    )
+    .join('');
+}
+
+async function runRace() {
+  const button = document.getElementById('race-run');
+  const productId = Number(document.getElementById('race-product').value);
+
+  button.disabled = true;
+  button.textContent = 'Racing…';
+  document.getElementById('race-result').innerHTML = '';
+
+  try {
+    const result = await apiPost('/api/admin/race', { product_id: productId });
+    hideNotice();
+    document.getElementById('race-result').innerHTML = raceResult(result);
+    await loadRaceProducts();
+  } catch (err) {
+    showNotice(err.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Run the race';
+  }
+}
+
 async function loadOrders() {
   const params = new URLSearchParams();
   if (filters.status) params.set('status', filters.status);
@@ -206,9 +298,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('products').innerHTML = products.products.map(productRow).join('');
 
     await loadOrders();
+    await loadRaceProducts();
   } catch (err) {
     showNotice(err.message);
   }
+
+  document.getElementById('race-run').addEventListener('click', runRace);
 
   // section switching
   document.querySelectorAll('[data-section]').forEach((tab) => {

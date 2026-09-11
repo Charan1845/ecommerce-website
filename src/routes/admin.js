@@ -9,6 +9,7 @@
 const express = require('express');
 const { all, get, run } = require('../db');
 const { requireOwner } = require('../auth');
+const { runRace, raceable } = require('../race-demo');
 
 const router = express.Router();
 router.use(requireOwner);
@@ -181,6 +182,43 @@ router.get('/stats', async (_req, res, next) => {
       low_stock: lowStock,
     });
   } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /api/admin/race - which products can be raced on.
+ */
+router.get('/race', async (_req, res, next) => {
+  try {
+    return res.json({ products: await raceable() });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /api/admin/race  { product_id }
+ *
+ * Runs the two-buyers race against the real checkout and reports what
+ * happened. Everything it creates is deleted afterwards and the product's
+ * stock is put back, so this is safe to press on the live shop.
+ *
+ * Owner only - it briefly sets a product's stock to 1, which is not something
+ * a customer should be able to do.
+ */
+router.post('/race', async (req, res, next) => {
+  try {
+    const productId = Number(req.body?.product_id);
+    if (!Number.isInteger(productId)) {
+      return res.status(400).json({ error: 'Bad product id.' });
+    }
+
+    return res.json(await runRace(productId));
+  } catch (err) {
+    if (err.status) {
+      return res.status(err.status).json({ error: err.message });
+    }
     return next(err);
   }
 });

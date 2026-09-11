@@ -30,7 +30,7 @@ Running the seed again resets every product's stock to its starting number.
 Customers, carts and orders are left alone.
 
 ```bash
-npm test         # 37 tests
+npm test         # 40 tests
 npm run images   # redraw the 48 product illustrations
 ```
 
@@ -429,21 +429,37 @@ An earlier version used Wikimedia Commons, which needs no API key, and was
 abandoned - it is an archive rather than a catalogue, and returned ceramic
 mouse ornaments and a cat in front of a monitor. It is in the git history.
 
+## Watching the race happen
+
+The most interesting thing this shop does is invisible. It takes microseconds,
+and the only evidence is a test.
+
+So the owner dashboard has a **Race demo** tab. Pick a product, press the
+button, and the server puts one item in stock, creates two throwaway buyers,
+and starts both checkouts in the same instant. It reports which one got it,
+what the other was told, and whether the three things that must be true still
+are - one winner, one turned away, stock landing on zero.
+
+Two things keep it honest rather than theatre:
+
+- It calls **the real checkout** - `placeOrder` in `src/checkout.js`, the same
+  function the Place Order button calls. A demonstration running a simplified
+  copy would prove something about the copy.
+- Nothing is staged or slowed down. Run it twice and a different buyer wins.
+
+It is safe to press on the live shop: the buyers are throwaway accounts, their
+orders are deleted afterwards, and the product's stock is put back exactly as
+it was found - including if the race throws.
+
+**One difference worth knowing.** On PostgreSQL the two checkouts genuinely
+overlap, because each transaction gets its own connection. On SQLite they
+queue, because one connection can only be in one transaction at a time - which
+is SQLite's actual behaviour, not a workaround. The outcome is the same; only
+the parallelism differs.
+
 ## What is next
 
-The [roadmap](ROADMAP.md) has the reasoning; the
-[issues](https://github.com/Charan1845/ecommerce-website/issues) have the
-detail. It is organised around one idea rather than a list of features:
-
-**Phase 1 — prove it stays right.** Stock becomes a ledger rather than a
-number, a job checks five invariants over real data and fails loudly when the
-books do not balance, and a load test puts two hundred buyers against four
-items in stock to see whether exactly four sell. The project already claims to
-be correct under concurrency; this is the part that keeps checking.
-
-**Phase 2 — money you can trust.** Payment confirmed by a webhook rather than
-by a browser that might close, and a refund path that returns stock honestly.
-
-**Phase 3 — fast, awake, and close to its data.** The app is in Oregon and its
-database is in Singapore, which costs about 350ms of every page load. The free
-instance sleeps. The images are three times larger than they are shown.
+The [issues](https://github.com/Charan1845/ecommerce-website/issues) hold the
+backlog, grouped into three milestones: proving the shop stays right, making
+payment confirmation not depend on a browser staying open, and the ordinary
+hosting work.

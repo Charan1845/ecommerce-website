@@ -124,19 +124,45 @@ function createSqlite() {
     },
   };
 
+  /**
+   * SQLite has one connection here, and one connection can only be inside one
+   * transaction at a time. Starting a second while the first is open throws
+   * "cannot start a transaction within a transaction".
+   *
+   * Ordinary requests never manage it - each handler runs to completion before
+   * the next one starts, because every SQLite call resolves immediately and so
+   * never yields to another request. But anything that starts two checkouts in
+   * the same tick does, and the owner's race demonstration does exactly that.
+   *
+   * So transactions queue up and take their turn. That matches how SQLite
+   * actually behaves - one writer - rather than pretending otherwise.
+   *
+   * PostgreSQL needs none of this: it hands out a separate connection per
+   * transaction, so they genuinely overlap. Which is the honest difference
+   * between the two, and worth knowing when reading the race results.
+   */
+  let queue = Promise.resolve();
+
   return {
     ...api,
 
-    async transaction(fn) {
-      db.exec('BEGIN IMMEDIATE');
-      try {
-        const result = await fn(api);
-        db.exec('COMMIT');
-        return result;
-      } catch (err) {
-        db.exec('ROLLBACK');
-        throw err;
-      }
+    transaction(fn) {
+      const turn = queue.then(async () => {
+        db.exec('BEGIN IMMEDIATE');
+        try {
+          const result = await fn(api);
+          db.exec('COMMIT');
+          return result;
+        } catch (err) {
+          db.exec('ROLLBACK');
+          throw err;
+        }
+      });
+
+      // The queue must keep moving even when this transaction fails, so it
+      // chains on the settled outcome rather than the rejection.
+      queue = turn.catch(() => {});
+      return turn;
     },
 
     async applySchema() {
