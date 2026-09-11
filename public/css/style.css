@@ -7,16 +7,43 @@
   --line: #e2e8f0;
   --bg: #f8fafc;
   --card: #ffffff;
+  --soft-bg: #f1f5f9;
   --accent: #2563eb;
   --accent-dark: #1d4ed8;
+  --accent-soft: rgba(37, 99, 235, 0.08);
   --good: #15803d;
   --good-bg: #dcfce7;
   --warn: #b45309;
   --warn-bg: #fef3c7;
   --bad: #b91c1c;
   --bad-bg: #fee2e2;
+  --header-bg: #0f172a;
   --radius: 10px;
   --shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+/* Dark theme: overrides the same tokens the whole stylesheet is already
+   built from, so components don't need their own dark variants. Chrome
+   that's deliberately always-dark (header, login art panel, QR backdrop)
+   is left alone on purpose - see the comments at each of those rules. */
+:root[data-theme="dark"] {
+  --ink: #e7ebf3;
+  --ink-soft: #a3adc2;
+  --ink-faint: #6b7690;
+  --line: #263049;
+  --bg: #0b0f1a;
+  --card: #131a2b;
+  --soft-bg: #1a2338;
+  --accent: #60a5fa;
+  --accent-dark: #93c5fd;
+  --accent-soft: rgba(96, 165, 250, 0.14);
+  --good: #4ade80;
+  --good-bg: #123722;
+  --warn: #fbbf24;
+  --warn-bg: #3a2a08;
+  --bad: #f87171;
+  --bad-bg: #3f1414;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 * { box-sizing: border-box; }
@@ -25,9 +52,10 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
-  font-size: 15px;
-  line-height: 1.55;
+  font-family: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 14.5px;
+  line-height: 1.6;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 a { color: var(--accent); text-decoration: none; }
@@ -37,12 +65,14 @@ a:hover { text-decoration: underline; }
 
 /* ---------- header ---------- */
 
+/* Always dark, in both themes - it's brand chrome, not page content. */
 .site-header {
-  background: var(--ink);
+  background: var(--header-bg);
   color: #fff;
   position: sticky;
   top: 0;
   z-index: 20;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .site-header .wrap {
@@ -105,6 +135,39 @@ a:hover { text-decoration: underline; }
   font-weight: 700;
 }
 
+/* Theme toggle: the header version sits among the dark nav links, so it
+   uses fixed light-on-dark styling rather than the theme tokens (the
+   header itself never changes color - see .site-header above). The .fab
+   variant is for pages with no header (login) and does follow the theme,
+   since it sits directly on the page background. */
+.theme-toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+.theme-toggle:hover { background: rgba(255, 255, 255, 0.18); }
+
+.theme-toggle.fab {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 30;
+  border-color: var(--line);
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+.theme-toggle.fab:hover { background: var(--soft-bg); }
+
 /* ---------- page furniture ---------- */
 
 main { padding: 28px 0 64px; }
@@ -121,7 +184,7 @@ h2 { font-size: 19px; margin: 0 0 12px; }
 }
 .notice.error { background: var(--bad-bg); color: var(--bad); }
 .notice.success { background: var(--good-bg); color: var(--good); }
-.notice.info { background: #e0f2fe; color: #075985; }
+.notice.info { background: var(--accent-soft); color: var(--accent-dark); }
 .notice[hidden] { display: none; }
 
 /* ---------- filters ---------- */
@@ -148,8 +211,8 @@ h2 { font-size: 19px; margin: 0 0 12px; }
 }
 .chip:hover { border-color: var(--ink-faint); }
 .chip.active {
-  background: var(--ink);
-  border-color: var(--ink);
+  background: var(--accent);
+  border-color: var(--accent);
   color: #fff;
   font-weight: 600;
 }
@@ -179,6 +242,40 @@ input:focus, select:focus, textarea:focus {
   gap: 18px;
 }
 
+/* ---------- loading skeletons ---------- */
+/* Shown for the instant before real content arrives, in place of a blank
+   grid or bare "Loading…" text - see index.html and shop.js. */
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeleton-fill {
+  background: linear-gradient(90deg, var(--line) 25%, var(--soft-bg) 50%, var(--line) 75%);
+  background-size: 200% 100%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton-fill { animation: skeleton-shimmer 1.4s ease-in-out infinite; }
+}
+
+.card.skeleton { pointer-events: none; }
+.skeleton-line {
+  height: 11px;
+  border-radius: 4px;
+  margin: 6px 0;
+}
+.skeleton-line.price { height: 18px; width: 45%; margin-top: 10px; }
+
+.skeleton-text {
+  display: inline-block;
+  min-width: 150px;
+  height: 1em;
+  border-radius: 4px;
+  color: transparent;
+  vertical-align: middle;
+}
+
 .card {
   background: var(--card);
   border: 1px solid var(--line);
@@ -200,7 +297,7 @@ input:focus, select:focus, textarea:focus {
   display: grid;
   place-items: center;
   position: relative;
-  background: linear-gradient(135deg, #e2e8f0, #f1f5f9);
+  background: linear-gradient(135deg, var(--line), var(--soft-bg));
   border-bottom: 1px solid var(--line);
 }
 .thumb img { width: 100%; height: 100%; display: block; }
@@ -276,7 +373,7 @@ input:focus, select:focus, textarea:focus {
   color: var(--ink);
   border-color: var(--line);
 }
-.btn.secondary:hover { background: #f1f5f9; }
+.btn.secondary:hover { background: var(--soft-bg); }
 .btn.danger { background: none; color: var(--bad); border-color: transparent; padding: 4px 8px; }
 .btn.danger:hover { background: var(--bad-bg); }
 .btn.small { padding: 5px 11px; font-size: 13px; }
@@ -372,7 +469,7 @@ td.num, th.num { text-align: right; }
   line-height: 1.5;
 }
 .pay-note code {
-  background: #f1f5f9;
+  background: var(--soft-bg);
   padding: 1px 5px;
   border-radius: 4px;
   font-size: 12px;
@@ -443,7 +540,7 @@ td.num, th.num { text-align: right; }
   padding: 10px 12px;
   border: 1px dashed var(--line);
   border-radius: 8px;
-  background: #f8fafc;
+  background: var(--soft-bg);
   color: var(--ink-faint);
   font: inherit;
   margin-bottom: 14px;
@@ -455,7 +552,7 @@ td.num, th.num { text-align: right; }
   font-size: 12.5px;
   line-height: 1.55;
   color: var(--ink-soft);
-  background: #f1f5f9;
+  background: var(--soft-bg);
   padding: 11px 13px;
   border-radius: 8px;
   margin: 4px 0 18px;
@@ -464,7 +561,7 @@ td.num, th.num { text-align: right; }
 .sandbox-tabs {
   display: flex;
   gap: 4px;
-  background: #eef2f7;
+  background: var(--soft-bg);
   padding: 4px;
   border-radius: 9px;
   margin-bottom: 18px;
@@ -553,7 +650,7 @@ td.num, th.num { text-align: right; }
   margin-bottom: 4px;
 }
 .admin-order-grid code {
-  background: #f1f5f9;
+  background: var(--soft-bg);
   padding: 1px 5px;
   border-radius: 4px;
   font-size: 12px;
@@ -577,9 +674,9 @@ td.num, th.num { text-align: right; }
 }
 .race-buyer p { margin: 6px 0 0; font-size: 14px; color: var(--ink-soft); }
 
-.race-buyer.won { border-color: #86efac; background: #f0fdf4; }
-.race-buyer.lost { border-color: #fcd34d; background: #fffbeb; }
-.race-buyer.broke { border-color: #fca5a5; background: #fef2f2; }
+.race-buyer.won { border-color: var(--good); background: var(--good-bg); }
+.race-buyer.lost { border-color: var(--warn); background: var(--warn-bg); }
+.race-buyer.broke { border-color: var(--bad); background: var(--bad-bg); }
 
 .race-buyer-name {
   font-size: 11px;
@@ -709,7 +806,7 @@ td.num, th.num { text-align: right; }
   display: flex;
   gap: 4px;
   margin-bottom: 24px;
-  background: #eef2f7;
+  background: var(--soft-bg);
   padding: 4px;
   border-radius: 10px;
 }
@@ -754,7 +851,7 @@ td.num, th.num { text-align: right; }
   padding: 4px 7px;
   border-radius: 6px;
 }
-.pw-toggle:hover { background: #eff6ff; }
+.pw-toggle:hover { background: var(--accent-soft); }
 
 .checkbox-row { display: flex; gap: 9px; align-items: flex-start; margin-bottom: 16px; }
 .checkbox-row input { margin-top: 3px; }
@@ -818,4 +915,13 @@ td.num, th.num { text-align: right; }
   .detail, .two-col { grid-template-columns: 1fr; }
   .site-header .wrap { gap: 12px; }
   .site-header nav { gap: 13px; font-size: 14px; }
+}
+
+/* Narrow phones: the owner nav (Shop, Cart, My orders, Owner badge, Log
+   out, theme toggle) no longer fits on one line even at the tighter 800px
+   sizing above, and a fixed-height sticky header would clip it. Let it
+   wrap instead of running off the edge of the screen. */
+@media (max-width: 480px) {
+  .site-header .wrap { flex-wrap: wrap; height: auto; padding: 10px 0; row-gap: 8px; }
+  .site-header nav { flex-wrap: wrap; row-gap: 8px; gap: 8px 14px; font-size: 13px; }
 }

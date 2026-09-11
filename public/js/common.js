@@ -131,6 +131,60 @@ async function whoAmI() {
   return userPromise;
 }
 
+/**
+ * Light/dark theme toggle.
+ *
+ * The initial theme is decided before this file even loads - see the
+ * inline script in each page's <head>, which reads localStorage (falling
+ * back to the OS preference) and stamps it onto <html> early enough that
+ * nothing ever flashes light-then-dark. This file only owns the button:
+ * flipping the attribute, remembering the choice, and drawing an icon
+ * that matches wherever the button happens to live.
+ */
+function isDarkTheme() {
+  return document.documentElement.dataset.theme === 'dark';
+}
+
+function setTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  try {
+    localStorage.setItem('theme', theme);
+  } catch {
+    /* private browsing, storage disabled, etc - the toggle still works
+       for this page load, it just won't be remembered */
+  }
+}
+
+function themeToggleHtml(extraClass) {
+  const icon = isDarkTheme() ? '☀️' : '🌙';
+  return `<button type="button" id="theme-toggle" class="theme-toggle ${extraClass || ''}"
+            aria-label="Switch to ${isDarkTheme() ? 'light' : 'dark'} mode"
+            title="Switch to ${isDarkTheme() ? 'light' : 'dark'} mode">${icon}</button>`;
+}
+
+function wireThemeToggle() {
+  const btn = document.getElementById('theme-toggle');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    setTheme(isDarkTheme() ? 'light' : 'dark');
+    btn.outerHTML = themeToggleHtml(btn.classList.contains('fab') ? 'fab' : '');
+    wireThemeToggle();
+  });
+}
+
+/**
+ * Pages built around <nav id="nav"> get the toggle drawn inside
+ * renderHeader(), alongside the rest of the nav. A page with no header
+ * (login.html) gets a small floating button instead, added here since
+ * renderHeader never runs for it.
+ */
+function ensureThemeToggle() {
+  if (document.getElementById('theme-toggle')) return;
+  if (document.getElementById('nav')) return; // renderHeader() will add it
+  document.body.insertAdjacentHTML('beforeend', themeToggleHtml('fab'));
+  wireThemeToggle();
+}
+
 /** Draw the top bar to match who is logged in. */
 async function renderHeader() {
   const user = await whoAmI();
@@ -159,12 +213,17 @@ async function renderHeader() {
     parts.push('<a href="/cart.html">Cart</a>', '<a href="/login.html">Log in</a>');
   }
 
+  parts.push(themeToggleHtml());
   nav.innerHTML = parts.join('');
 
   document.getElementById('logout')?.addEventListener('click', async () => {
     await apiPost('/api/auth/logout');
     window.location.href = '/';
   });
+  wireThemeToggle();
 }
 
-document.addEventListener('DOMContentLoaded', renderHeader);
+document.addEventListener('DOMContentLoaded', () => {
+  renderHeader();
+  ensureThemeToggle();
+});
