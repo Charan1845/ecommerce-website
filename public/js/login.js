@@ -11,6 +11,9 @@ let mode = 'login';
 /** Whether the shop has a demo account, so the button is not re-shown by mistake. */
 let demoAvailable = false;
 
+/** Whether Google sign-in is set up, so it is not re-shown by mistake. */
+let googleAvailable = false;
+
 const $ = (id) => document.getElementById(id);
 
 /** Where to go after a successful login. Only ever a path on this site. */
@@ -51,6 +54,7 @@ function setMode(next) {
   $('signup-details').hidden = !signingUp;
   $('forgot-row').hidden = mode !== 'login';
   $('demo-block').hidden = forgetting || !demoAvailable;
+  $('google-block').hidden = forgetting || !googleAvailable;
 
   if (forgetting) {
     $('heading').textContent = 'Forgotten your password?';
@@ -158,6 +162,65 @@ function wirePasswordToggles() {
 }
 
 /**
+ * Draw Google's own sign-in button, if the shop is set up for it.
+ *
+ * Google's script is loaded only when it is actually going to be used, so a
+ * shop with no Google configured makes no request to them at all - and
+ * neither does anybody visiting it.
+ */
+async function offerGoogleSignIn() {
+  let config;
+  try {
+    config = await apiGet('/api/auth/google');
+  } catch {
+    return;
+  }
+  if (!config.enabled) return;
+
+  await new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  }).catch(() => null);
+
+  if (!window.google?.accounts?.id) return;
+
+  window.google.accounts.id.initialize({
+    client_id: config.client_id,
+    callback: async ({ credential }) => {
+      try {
+        const result = await apiPost('/api/auth/google', { credential });
+
+        // Linking retires the old password, which is worth saying out loud
+        // before they are sent on their way.
+        if (result.message) {
+          showNotice(result.message, 'info');
+          setTimeout(() => { window.location.href = nextUrl(); }, 4000);
+          return;
+        }
+
+        window.location.href = nextUrl();
+      } catch (err) {
+        showNotice(err.message);
+      }
+    },
+  });
+
+  window.google.accounts.id.renderButton(document.getElementById('google-button'), {
+    theme: document.documentElement.dataset.theme === 'dark' ? 'filled_black' : 'outline',
+    size: 'large',
+    width: 380,
+    text: 'continue_with',
+  });
+
+  googleAvailable = true;
+  if (mode !== 'forgot') document.getElementById('google-block').hidden = false;
+}
+
+/**
  * Show the demo button only if the server actually has a demo account.
  * Deploy with DEMO_LOGIN=off and the button never appears.
  */
@@ -197,6 +260,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   $('forgot-link').addEventListener('click', () => setMode('forgot'));
   wirePasswordToggles();
   offerDemoAccount();
+  offerGoogleSignIn();
 
   if (new URLSearchParams(window.location.search).get('mode') === 'signup') {
     setMode('signup');

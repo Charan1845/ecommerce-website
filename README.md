@@ -32,7 +32,7 @@ Running the seed again resets every product's stock to its starting number.
 Customers, carts and orders are left alone.
 
 ```bash
-npm test         # 45 tests
+npm test         # 52 tests
 npm run images   # redraw the 48 product illustrations
 ```
 
@@ -183,6 +183,40 @@ One thing to know about Resend: until a domain is verified it only delivers to
 the address that owns the account. Everything else is accepted by the API and
 dropped. Fine for a demo, but it is not working email, and the failure looks
 exactly like success.
+
+## Signing in with Google
+
+Switched off unless `GOOGLE_CLIENT_ID` is set. There is **no client secret** in
+this flow - the browser is handed a signed token by Google and the server
+checks it, so the only thing this project holds is the client id, which is
+public by design.
+
+Verifying that token means four things, and skipping any one makes the feature
+theatre: the signature is really Google's, checked against the keys they
+publish; `aud` is our client id, because a token minted for another site is a
+real Google token and still nothing to do with us; `iss` is Google; and it has
+not expired. Google's keys are cached for an hour and refetched if a token
+arrives signed with a key we have not seen.
+
+### The case that is easy to get wrong
+
+Signing up here does not verify email addresses. So anybody can register
+`victim@example.com`, and if Google sign-in simply matched on email, the real
+owner of that mailbox would be handed into an account somebody else made -
+while that somebody kept the password.
+
+The rule is therefore **proof of the mailbox outranks an unverified
+password**. Linking Google to an existing password account retires that
+password and ends every session opened before the link. Whoever genuinely set
+it can take the account back through the reset flow, which also needs the
+mailbox. Whoever does not have the mailbox is out.
+
+Returning visitors are matched on `google_sub`, Google's permanent id for the
+account, rather than on email - people change their email address, and Google
+keeps that id.
+
+The honest fix for the underlying problem is verifying addresses at signup,
+which is worth doing now that the shop can send email.
 
 ## Paying
 

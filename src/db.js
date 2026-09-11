@@ -230,6 +230,9 @@ const LATER_COLUMNS = [
   // login cookie is self-contained and cannot be revoked, so the only way to
   // end one early is to check it against something in the database.
   { table: 'users', column: 'password_changed_at', sqlite: 'TEXT', pg: 'TIMESTAMPTZ' },
+  // Google's permanent id for an account. Matched on instead of email,
+  // because people change their email address and Google keeps this.
+  { table: 'users', column: 'google_sub', sqlite: 'TEXT', pg: 'VARCHAR(40)' },
 ];
 
 async function migrate() {

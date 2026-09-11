@@ -22,7 +22,9 @@ CREATE TABLE IF NOT EXISTS users (
                 CHECK (role IN ('customer', 'owner')),
   created_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),
   -- Set when a password is reset, so sessions opened before it stop working.
-  password_changed_at TIMESTAMPTZ
+  password_changed_at TIMESTAMPTZ,
+  -- Google's permanent id for the account, when they signed in that way.
+  google_sub          VARCHAR(40)
 );
 
 CREATE TABLE IF NOT EXISTS products (

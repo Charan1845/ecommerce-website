@@ -5,6 +5,8 @@ const { get } = require('../db');
 const { rateLimit } = require('../rate-limit');
 const { requestReset, completeReset, LIFETIME_MINUTES } = require('../password-reset');
 const { isEnabled: emailEnabled } = require('../email');
+const { isEnabled: googleEnabled, clientId: googleClientId, verifyIdToken } = require('../google-auth');
+const { signInWithGoogle } = require('../google-signin');
 const {
   hashPassword,
   verifyPassword,
@@ -279,6 +281,50 @@ router.post('/reset', resetLimit, async (req, res, next) => {
         .status(err.status)
         .json({ error: err.message, fields: err.field ? { [err.field]: err.message } : {} });
     }
+    return next(err);
+  }
+});
+
+/* ------------------------------------------------------------------ */
+/* signing in with Google                                               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * GET /api/auth/google
+ *
+ * The page asks before drawing the button. The client id is public - it
+ * identifies this site to Google and is meant to be in the page.
+ */
+router.get('/google', (_req, res) => {
+  res.json({ enabled: googleEnabled(), client_id: googleEnabled() ? googleClientId() : null });
+});
+
+/**
+ * POST /api/auth/google  { credential }
+ *
+ * The browser sends the token Google gave it. Everything that decides whether
+ * to believe it happens on this side.
+ */
+router.post('/google', loginLimit, async (req, res, next) => {
+  try {
+    const identity = await verifyIdToken(req.body?.credential);
+    const { user, outcome } = await signInWithGoogle(identity);
+
+    issueToken(res, user);
+    console.log(`google sign-in: ${outcome} (${user.username})`);
+
+    return res.json({
+      user: publicUser(user),
+      outcome,
+      // Said plainly to the person it happened to, because their password
+      // silently ceasing to work would otherwise be baffling.
+      message:
+        outcome === 'linked'
+          ? 'Your existing account is now signed in with Google. Any password it had no longer works - use "forgotten your password" if you want to set a new one.'
+          : undefined,
+    });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
     return next(err);
   }
 });

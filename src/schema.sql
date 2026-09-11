@@ -17,7 +17,9 @@ CREATE TABLE IF NOT EXISTS users (
   role          TEXT    NOT NULL DEFAULT 'customer' CHECK (role IN ('customer', 'owner')),
   created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
   -- Set when a password is reset, so sessions opened before it stop working.
-  password_changed_at TEXT
+  password_changed_at TEXT,
+  -- Google's permanent id for the account, when they signed in that way.
+  google_sub          TEXT
 );
 
 CREATE TABLE IF NOT EXISTS products (

@@ -186,6 +186,15 @@
           <button type="submit" class="btn" id="submit" style="width:100%">Log in</button>
         </form>
 
+        <div id="google-block" hidden>
+          <div class="or-line"><span>or</span></div>
+          <!-- Google draws its own button in here. Theirs rather than ours,
+               because a homemade "Sign in with Google" button is a well-worn
+               way of collecting passwords, and people are taught to look for
+               the real one. -->
+          <div id="google-button"></div>
+        </div>
+
         <div id="demo-block" hidden>
           <div class="or-line"><span>or</span></div>
           <button type="button" class="btn secondary" id="demo-btn" style="width:100%">

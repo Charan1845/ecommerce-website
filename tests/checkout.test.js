@@ -27,6 +27,7 @@ const { applySchema, get, all, run, close } = require('../src/db');
 const { seedProducts, seedDemo, seedOwner } = require('../src/seed');
 const { resetRateLimits } = require('../src/rate-limit');
 const { requestReset, hashToken } = require('../src/password-reset');
+const { signInWithGoogle } = require('../src/google-signin');
 const sandboxGateway = require('../src/sandbox-gateway');
 const { createApp } = require('../src/app');
 
@@ -42,6 +43,7 @@ delete process.env.RAZORPAY_KEY_SECRET;
 // @example.com address, so a configured provider would either bounce them or,
 // worse, deliver them somewhere. Tests get the link handed back instead.
 delete process.env.RESEND_API_KEY;
+delete process.env.GOOGLE_CLIENT_ID;
 
 let server;
 let BASE;
@@ -1079,6 +1081,116 @@ test('asking for a new link cancels the previous one', async () => {
     body: JSON.stringify({ token: second, password: 'new-link-password', confirm_password: 'new-link-password' }),
   });
   assert.equal(good.status, 200);
+});
+
+/* Google sign-in.
+ *
+ * The token verification itself needs Google's signing keys and a real token,
+ * so what is tested here is the part that decides who you end up as - which is
+ * where the consequences are.
+ */
+
+test('a new Google account gets an account here', async () => {
+  const { user, outcome } = await signInWithGoogle({
+    sub: 'google-sub-brand-new',
+    email: 'brand.new@example.com',
+    name: 'Brand New',
+  });
+
+  assert.equal(outcome, 'created');
+  assert.equal(user.email, 'brand.new@example.com');
+  assert.equal(user.role, 'customer', 'signing in with Google must never make an owner');
+  assert.ok(user.username, 'a username should be worked out from the address');
+  assert.equal(user.google_sub, 'google-sub-brand-new');
+});
+
+test('signing in with Google again returns the same account', async () => {
+  const first = await signInWithGoogle({ sub: 'google-sub-repeat', email: 'repeat@example.com' });
+  const second = await signInWithGoogle({ sub: 'google-sub-repeat', email: 'repeat@example.com' });
+
+  assert.equal(first.outcome, 'created');
+  assert.equal(second.outcome, 'returning');
+  assert.equal(second.user.id, first.user.id, 'it must not make a second account');
+});
+
+test('Google is matched on its own id, not on the email address', async () => {
+  const before = await signInWithGoogle({ sub: 'google-sub-moved', email: 'old.address@example.com' });
+
+  // Same person, address changed on Google's side.
+  const after = await signInWithGoogle({ sub: 'google-sub-moved', email: 'new.address@example.com' });
+
+  assert.equal(after.outcome, 'returning');
+  assert.equal(after.user.id, before.user.id);
+  assert.equal(after.user.email, 'new.address@example.com', 'the address should follow');
+});
+
+test('linking Google to a password account retires that password', async () => {
+  // Somebody registered this address with a password. Signup does not verify
+  // addresses, so this may not be the person who owns the mailbox.
+  const impostor = await newCustomer('sven_link');
+
+  // The real owner of the mailbox arrives through Google.
+  const { user, outcome } = await signInWithGoogle({
+    sub: 'google-sub-link',
+    email: 'sven_link@example.com',
+  });
+
+  assert.equal(outcome, 'linked');
+  assert.equal(user.id, (await get('SELECT id FROM users WHERE username = ?', ['sven_link'])).id);
+
+  // The password that was set before must stop working - otherwise whoever
+  // set it keeps access to the mailbox owner's account.
+  resetRateLimits();
+  const oldPassword = await fetch(`${BASE}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ username: 'sven_link', password: 'a-good-password' }),
+  });
+  assert.equal(oldPassword.status, 401, 'the retired password must not work');
+
+  // And any session that password opened is over.
+  const stale = await impostor.call('GET', '/api/auth/me');
+  assert.equal(stale.body.user, null, 'sessions opened before the link must end');
+});
+
+test('two Google accounts do not collide on a username', async () => {
+  const a = await signInWithGoogle({ sub: 'google-sub-clash-a', email: 'sameword@example.com' });
+  const b = await signInWithGoogle({ sub: 'google-sub-clash-b', email: 'sameword@other-example.com' });
+
+  assert.notEqual(a.user.id, b.user.id);
+  assert.notEqual(a.user.username, b.user.username, 'the second should get a different username');
+});
+
+test('Google sign-in is off, and says so, without a client id', async () => {
+  const config = await (await fetch(`${BASE}/api/auth/google`)).json();
+  assert.equal(config.enabled, false);
+  assert.equal(config.client_id, null);
+
+  resetRateLimits();
+  const attempt = await fetch(`${BASE}/api/auth/google`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ credential: 'anything-at-all' }),
+  });
+  assert.equal(attempt.status, 503);
+});
+
+test('an invented Google token is refused', async () => {
+  process.env.GOOGLE_CLIENT_ID = 'test-client-id.apps.googleusercontent.com';
+  try {
+    resetRateLimits();
+    const attempt = await fetch(`${BASE}/api/auth/google`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ credential: 'not.a.real.token' }),
+    });
+    assert.equal(attempt.status, 400);
+
+    const users = await all("SELECT id FROM users WHERE google_sub = 'made-up'");
+    assert.equal(users.length, 0, 'nothing should have been created');
+  } finally {
+    delete process.env.GOOGLE_CLIENT_ID;
+  }
 });
 
 test('checkout refuses a bad pincode', async () => {
