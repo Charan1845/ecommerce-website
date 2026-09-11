@@ -1,5 +1,7 @@
 # DevGear
 
+[![tests](https://github.com/Charan1845/ecommerce-website/actions/workflows/ci.yml/badge.svg)](https://github.com/Charan1845/ecommerce-website/actions/workflows/ci.yml)
+
 A small online shop for computer accessories - keyboards, mice, headsets and
 monitors. Express REST API, plain HTML/CSS/JavaScript front end, SQLite on a
 laptop and PostgreSQL when deployed.
