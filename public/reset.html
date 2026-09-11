@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    // Decide the theme before anything paints, so there's no light-then-dark
+    // flash. The toggle button itself lives in common.js.
+    (function () {
+      try {
+        var saved = localStorage.getItem('theme');
+        var dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+        if (dark) document.documentElement.dataset.theme = 'dark';
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <title>Choose a new password - DevGear</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="auth-split">
+
+    <section class="auth-brand">
+      <svg class="art" viewBox="0 0 600 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <circle cx="120" cy="150" r="90" fill="#ffffff" opacity="0.10"/>
+        <circle cx="520" cy="620" r="130" fill="#ffffff" opacity="0.08"/>
+      </svg>
+
+      <a class="logo" href="/">Dev<span>Gear</span></a>
+
+      <div>
+        <h2>Choose a new password</h2>
+        <p class="tag">
+          This link works once. After you use it, it stops working - and so does
+          every other reset link for your account.
+        </p>
+
+        <ul class="auth-points">
+          <li><span class="tick">✓</span><span>Your old password stops working immediately</span></li>
+          <li><span class="tick">✓</span><span>Anyone already signed in to your account is signed out</span></li>
+          <li><span class="tick">✓</span><span>We store a one-way hash, so we never see what you choose</span></li>
+        </ul>
+      </div>
+
+      <p class="small">Demo store &middot; no payment is taken and no order is fulfilled.</p>
+    </section>
+
+    <section class="auth-form-side">
+      <div class="auth-card">
+        <h1 id="heading">Choose a new password</h1>
+        <p class="subtitle" id="sub">Pick something you have not used anywhere else.</p>
+
+        <div id="notice" class="notice" hidden></div>
+
+        <form id="form" novalidate>
+          <div class="field">
+            <label for="password">New password</label>
+            <div class="pw-wrap">
+              <input type="password" id="password" name="password"
+                     autocomplete="new-password" placeholder="At least 8 characters" required>
+              <button type="button" class="pw-toggle" data-toggle="password">Show</button>
+            </div>
+            <span class="err" id="err-password"></span>
+          </div>
+
+          <div class="field">
+            <label for="confirm_password">Confirm new password</label>
+            <div class="pw-wrap">
+              <input type="password" id="confirm_password" name="confirm_password"
+                     autocomplete="new-password" placeholder="Type it again" required>
+              <button type="button" class="pw-toggle" data-toggle="confirm_password">Show</button>
+            </div>
+            <span class="err" id="err-confirm_password"></span>
+          </div>
+
+          <button type="submit" class="btn" id="submit" style="width:100%">Change my password</button>
+        </form>
+
+        <p class="auth-foot">
+          <a href="/login.html">Back to logging in</a>
+        </p>
+      </div>
+    </section>
+  </div>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/reset.js"></script>
+</body>
+</html>

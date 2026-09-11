@@ -110,13 +110,13 @@
 
         <div id="notice" class="notice" hidden></div>
 
-        <div class="form-switcher">
+        <div class="form-switcher" id="switcher">
           <button type="button" id="tab-login" class="active">Log in</button>
           <button type="button" id="tab-signup">Sign up</button>
         </div>
 
         <form id="form" novalidate>
-          <div class="field">
+          <div class="field" id="field-username">
             <label for="username">Username</label>
             <input type="text" id="username" name="username" autocomplete="username" required>
             <span class="err" id="err-username"></span>
@@ -129,7 +129,7 @@
             <span class="err" id="err-email"></span>
           </div>
 
-          <div class="field">
+          <div class="field" id="field-password">
             <label for="password">Password</label>
             <div class="pw-wrap">
               <input type="password" id="password" name="password"
@@ -137,6 +137,9 @@
               <button type="button" class="pw-toggle" data-toggle="password">Show</button>
             </div>
             <span class="err" id="err-password"></span>
+            <p class="forgot-row" id="forgot-row">
+              <button type="button" id="forgot-link">Forgotten your password?</button>
+            </p>
           </div>
 
           <div id="signup-details" hidden>

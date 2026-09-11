@@ -853,6 +853,19 @@ td.num, th.num { text-align: right; }
 }
 .pw-toggle:hover { background: var(--accent-soft); }
 
+.forgot-row { margin: 8px 0 0; text-align: right; }
+.forgot-row button {
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 0;
+}
+.forgot-row button:hover { text-decoration: underline; }
+.forgot-row[hidden] { display: none; }
+
 .checkbox-row { display: flex; gap: 9px; align-items: flex-start; margin-bottom: 16px; }
 .checkbox-row input { margin-top: 3px; }
 .checkbox-row label { font-size: 14px; color: var(--ink-soft); font-weight: 400; }

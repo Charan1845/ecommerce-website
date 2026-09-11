@@ -15,7 +15,9 @@ CREATE TABLE IF NOT EXISTS users (
   -- 'customer' or 'owner'. This single column is our authorization:
   -- logging in says who you are, this says what you are allowed to do.
   role          TEXT    NOT NULL DEFAULT 'customer' CHECK (role IN ('customer', 'owner')),
-  created_at    TEXT    NOT NULL DEFAULT (datetime('now'))
+  created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
+  -- Set when a password is reset, so sessions opened before it stop working.
+  password_changed_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS products (
@@ -98,3 +100,24 @@ CREATE TABLE IF NOT EXISTS order_items (
 );
 
 CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items (order_id);
+
+-- A password reset that has been asked for but not yet used.
+--
+-- The token itself is never stored, only a SHA-256 of it - the same reasoning
+-- as passwords. Anyone who steals this table gets a list of hashes they
+-- cannot turn back into working links.
+--
+-- SHA-256 rather than bcrypt here on purpose: a reset token is 32 random
+-- bytes we generated, not a word a human chose, so there is nothing to guess
+-- and no reason to make checking it deliberately slow.
+CREATE TABLE IF NOT EXISTS password_resets (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id    INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  token_hash TEXT    NOT NULL UNIQUE,
+  expires_at TEXT    NOT NULL,
+  -- Set the moment it is spent. A reset link works exactly once.
+  used_at    TEXT,
+  created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_password_resets_user ON password_resets (user_id);

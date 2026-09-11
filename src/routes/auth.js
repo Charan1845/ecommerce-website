@@ -3,6 +3,8 @@
 const express = require('express');
 const { get } = require('../db');
 const { rateLimit } = require('../rate-limit');
+const { requestReset, completeReset, LIFETIME_MINUTES } = require('../password-reset');
+const { isEnabled: emailEnabled } = require('../email');
 const {
   hashPassword,
   verifyPassword,
@@ -27,6 +29,14 @@ const signupLimit = rateLimit({
   max: 15,
   windowMs: 60 * 60 * 1000,
   message: 'Too many accounts created from here. Try again later.',
+});
+
+// Asking for a reset is cheap for us and useful to somebody working through a
+// list of addresses, so it gets its own limit.
+const resetLimit = rateLimit({
+  max: 5,
+  windowMs: 60 * 60 * 1000,
+  message: 'Too many reset requests from here. Try again later.',
 });
 
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,30}$/;
@@ -194,6 +204,81 @@ router.post('/demo-login', async (_req, res, next) => {
     issueToken(res, user);
     return res.json({ user: publicUser(user) });
   } catch (err) {
+    return next(err);
+  }
+});
+
+/* ------------------------------------------------------------------ */
+/* forgotten passwords                                                  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * POST /api/auth/forgot  { email }
+ *
+ * Always answers the same way. Saying "no account with that address" would
+ * turn this form into a way of finding out who has an account here, which is
+ * worth more to somebody with a list of addresses than it is to a forgetful
+ * customer.
+ */
+router.post('/forgot', resetLimit, async (req, res, next) => {
+  try {
+    const email = String(req.body?.email || '').trim();
+
+    if (!EMAIL_RE.test(email)) {
+      return res.status(400).json({
+        error: 'Enter the email address on your account.',
+        fields: { email: 'That does not look like an email address.' },
+      });
+    }
+
+    // What happened is logged for whoever runs the shop, and deliberately not
+    // reflected in the reply.
+    const result = await requestReset(email);
+    console.log(`password reset requested: ${result.outcome}`);
+
+    return res.json({
+      ok: true,
+      message:
+        'If that address has an account, a reset link is on its way. ' +
+        `It works once and stops working after ${LIFETIME_MINUTES} minutes.`,
+      // Whether the shop can send email at all is not a secret, and the page
+      // needs it to explain itself honestly when it cannot.
+      email_configured: emailEnabled(),
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /api/auth/reset  { token, password, confirm_password }
+ *
+ * Spends the link and sets the new password. Deliberately does not log the
+ * visitor in afterwards: arriving at a reset link only proves control of the
+ * mailbox, and making them type the new password once more costs a moment and
+ * confirms they know it.
+ */
+router.post('/reset', resetLimit, async (req, res, next) => {
+  try {
+    const password = req.body?.password || '';
+
+    if (password !== req.body?.confirm_password) {
+      return res.status(400).json({
+        error: 'Please fix the highlighted fields.',
+        fields: { confirm_password: 'The two passwords do not match.' },
+      });
+    }
+
+    const { username } = await completeReset({ token: req.body?.token, password });
+    console.log(`password reset completed for ${username}`);
+
+    return res.json({ ok: true, message: 'Your password has been changed. You can log in now.' });
+  } catch (err) {
+    if (err.status) {
+      return res
+        .status(err.status)
+        .json({ error: err.message, fields: err.field ? { [err.field]: err.message } : {} });
+    }
     return next(err);
   }
 });

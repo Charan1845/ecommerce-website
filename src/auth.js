@@ -49,6 +49,24 @@ function clearToken(res) {
 }
 
 /**
+ * Was this cookie handed out before the password last changed?
+ *
+ * `iat` counts in whole seconds, so a cookie issued in the same second as the
+ * reset is treated as older. That errs towards logging somebody out, which is
+ * the safe direction: the one they just typed the new password into is not
+ * this one, because resetting deliberately does not log you in.
+ */
+function issuedBeforePasswordChange(payload, changedAt) {
+  if (!changedAt || !payload?.iat) return false;
+
+  // PostgreSQL hands back a Date, SQLite an ISO string.
+  const changed = changedAt instanceof Date ? changedAt : new Date(String(changedAt));
+  if (Number.isNaN(changed.getTime())) return false;
+
+  return payload.iat * 1000 <= changed.getTime();
+}
+
+/**
  * Reads the cookie and, if it is valid, hangs the user on req.user.
  * Never rejects - pages like the catalogue work fine logged out.
  */
@@ -64,10 +82,22 @@ async function loadUser(req, _res, next) {
     // contents. A token issued last week may name a role that has since
     // changed, or a user who has since been deleted.
     const user = await get(
-      'SELECT id, username, email, phone, state, role FROM users WHERE id = ?',
+      'SELECT id, username, email, phone, state, role, password_changed_at FROM users WHERE id = ?',
       [payload.sub]
     );
-    if (user) req.user = user;
+
+    // A login cookie cannot be recalled once handed out, so a password reset
+    // has to be enforced here instead: any cookie issued before the password
+    // changed stops counting. Without this, somebody who already had access
+    // keeps it through the reset meant to remove them.
+    if (user && issuedBeforePasswordChange(payload, user.password_changed_at)) {
+      return next();
+    }
+
+    if (user) {
+      delete user.password_changed_at;
+      req.user = user;
+    }
   } catch {
     // Expired or tampered with. Treat as logged out.
   }

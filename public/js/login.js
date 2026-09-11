@@ -8,6 +8,9 @@
 
 let mode = 'login';
 
+/** Whether the shop has a demo account, so the button is not re-shown by mistake. */
+let demoAvailable = false;
+
 const $ = (id) => document.getElementById(id);
 
 /** Where to go after a successful login. Only ever a path on this site. */
@@ -33,28 +36,56 @@ function setMode(next) {
   clearErrors();
 
   const signingUp = mode === 'signup';
+  const forgetting = mode === 'forgot';
 
-  $('tab-login').classList.toggle('active', !signingUp);
+  // The two tabs only make sense while choosing between them. Asking for a
+  // reset link is a detour, not a third thing you might have meant to do.
+  $('switcher').hidden = forgetting;
+  $('tab-login').classList.toggle('active', mode === 'login');
   $('tab-signup').classList.toggle('active', signingUp);
-  $('field-email').hidden = !signingUp;
+
+  // Forgetting a password asks for the email address and nothing else.
+  $('field-username').hidden = forgetting;
+  $('field-email').hidden = !(signingUp || forgetting);
+  $('field-password').hidden = forgetting;
   $('signup-details').hidden = !signingUp;
+  $('forgot-row').hidden = mode !== 'login';
+  $('demo-block').hidden = forgetting || !demoAvailable;
 
-  $('heading').textContent = signingUp ? 'Create your account' : 'Welcome back';
-  $('sub').textContent = signingUp
-    ? 'One account for your cart and your orders.'
-    : 'Log in to your DevGear account.';
-  $('submit').textContent = signingUp ? 'Sign up' : 'Log in';
+  if (forgetting) {
+    $('heading').textContent = 'Forgotten your password?';
+    $('sub').textContent =
+      'Give us the address on your account and we will send a link to choose a new one.';
+    $('submit').textContent = 'Send me a reset link';
+  } else if (signingUp) {
+    $('heading').textContent = 'Create your account';
+    $('sub').textContent = 'One account for your cart and your orders.';
+    $('submit').textContent = 'Sign up';
+  } else {
+    $('heading').textContent = 'Welcome back';
+    $('sub').textContent = 'Log in to your DevGear account.';
+    $('submit').textContent = 'Log in';
+  }
 
-  $('foot').innerHTML = signingUp
-    ? 'Already have an account? <button type="button" id="foot-switch">Log in</button>'
-    : 'New to DevGear? <button type="button" id="foot-switch">Create an account</button>';
-  $('foot-switch').addEventListener('click', () => setMode(signingUp ? 'login' : 'signup'));
+  if (forgetting) {
+    $('foot').innerHTML = 'Remembered it? <button type="button" id="foot-switch">Log in</button>';
+  } else if (signingUp) {
+    $('foot').innerHTML =
+      'Already have an account? <button type="button" id="foot-switch">Log in</button>';
+  } else {
+    $('foot').innerHTML =
+      'New to DevGear? <button type="button" id="foot-switch">Create an account</button>';
+  }
+  $('foot-switch').addEventListener('click', () => setMode(signingUp || forgetting ? 'login' : 'signup'));
 
   $('password').autocomplete = signingUp ? 'new-password' : 'current-password';
 
-  // Only require the extra fields when they are actually on screen, otherwise
-  // the browser blocks submitting a form with hidden required boxes.
-  ['email', 'confirm_password'].forEach((id) => { $(id).required = signingUp; });
+  // Only require the fields that are actually on screen, otherwise the browser
+  // blocks submitting a form with hidden required boxes.
+  $('username').required = !forgetting;
+  $('password').required = !forgetting;
+  $('email').required = signingUp || forgetting;
+  $('confirm_password').required = signingUp;
 }
 
 async function submit(event) {
@@ -67,6 +98,27 @@ async function submit(event) {
   button.textContent = 'Please wait…';
 
   try {
+    if (mode === 'forgot') {
+      const result = await apiPost('/api/auth/forgot', { email: $('email').value });
+
+      // Deliberately the same message whether or not that address has an
+      // account - see the route. The page must not give away more than the
+      // server chose to.
+      showNotice(result.message, 'success');
+
+      if (!result.email_configured) {
+        showNotice(
+          `${result.message} (This shop has no email service configured, so ` +
+            'nothing will actually arrive - the link is printed in the server log.)',
+          'info'
+        );
+      }
+
+      button.disabled = false;
+      button.textContent = label;
+      return;
+    }
+
     if (mode === 'signup') {
       await apiPost('/api/auth/signup', {
         username: $('username').value,
@@ -118,7 +170,8 @@ async function offerDemoAccount() {
   }
   if (!available) return;
 
-  $('demo-block').hidden = false;
+  demoAvailable = true;
+  if (mode !== 'forgot') $('demo-block').hidden = false;
 
   $('demo-btn').addEventListener('click', async () => {
     const button = $('demo-btn');
@@ -141,6 +194,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   $('tab-signup').addEventListener('click', () => setMode('signup'));
   $('foot-switch').addEventListener('click', () => setMode('signup'));
   $('form').addEventListener('submit', submit);
+  $('forgot-link').addEventListener('click', () => setMode('forgot'));
   wirePasswordToggles();
   offerDemoAccount();
 

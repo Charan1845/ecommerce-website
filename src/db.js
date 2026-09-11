@@ -226,6 +226,10 @@ const LATER_COLUMNS = [
   // another, and nothing would tell you which.
   { table: 'orders', column: 'paid_at', sqlite: 'TEXT', pg: 'TIMESTAMPTZ' },
   { table: 'orders', column: 'payment_provider', sqlite: 'TEXT', pg: 'VARCHAR(20)' },
+  // Lets a password reset cut off sessions that were opened before it. A
+  // login cookie is self-contained and cannot be revoked, so the only way to
+  // end one early is to check it against something in the database.
+  { table: 'users', column: 'password_changed_at', sqlite: 'TEXT', pg: 'TIMESTAMPTZ' },
 ];
 
 async function migrate() {

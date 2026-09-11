@@ -26,6 +26,7 @@ const crypto = require('node:crypto');
 const { applySchema, get, all, run, close } = require('../src/db');
 const { seedProducts, seedDemo, seedOwner } = require('../src/seed');
 const { resetRateLimits } = require('../src/rate-limit');
+const { requestReset, hashToken } = require('../src/password-reset');
 const sandboxGateway = require('../src/sandbox-gateway');
 const { createApp } = require('../src/app');
 
@@ -908,6 +909,171 @@ test('a customer cannot run the race', async () => {
 
   const list = await shopper.call('GET', '/api/admin/race');
   assert.equal(list.status, 403);
+});
+
+/** Ask for a reset and dig the token back out, the way the email would carry it. */
+async function resetTokenFor(email) {
+  resetRateLimits();
+  const result = await requestReset(email);
+  // Outside production and with no mail provider, requestReset hands the link
+  // back so the flow can be walked through.
+  const link = result.link || '';
+  return new URL(link).searchParams.get('token');
+}
+
+test('a reset link changes the password, once', async () => {
+  const user = await newCustomer('nora_reset');
+
+  const token = await resetTokenFor('nora_reset@example.com');
+  assert.ok(token, 'a reset should produce a token');
+
+  // Only the hash is stored - the token itself must not be findable.
+  const stored = await get('SELECT token_hash FROM password_resets WHERE token_hash = ?', [
+    hashToken(token),
+  ]);
+  assert.ok(stored, 'the hash should be on file');
+  assert.notEqual(stored.token_hash, token, 'the raw token must never be stored');
+
+  const done = await fetch(`${BASE}/api/auth/reset`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      token,
+      password: 'a-brand-new-password',
+      confirm_password: 'a-brand-new-password',
+    }),
+  });
+  assert.equal(done.status, 200);
+
+  resetRateLimits();
+
+  // The new password works.
+  const fresh = await fetch(`${BASE}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ username: 'nora_reset', password: 'a-brand-new-password' }),
+  });
+  assert.equal(fresh.status, 200);
+
+  // The old one does not.
+  const old = await fetch(`${BASE}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ username: 'nora_reset', password: 'a-good-password' }),
+  });
+  assert.equal(old.status, 401);
+
+  // And the link cannot be used again.
+  const again = await fetch(`${BASE}/api/auth/reset`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ token, password: 'third-password', confirm_password: 'third-password' }),
+  });
+  assert.equal(again.status, 400);
+  assert.match((await again.json()).error, /expired|already been used/i);
+});
+
+test('resetting signs out sessions opened before it', async () => {
+  const user = await newCustomer('omar_session');
+
+  // Still logged in from signing up.
+  const before = await user.call('GET', '/api/auth/me');
+  assert.equal(before.body.user.username, 'omar_session');
+
+  const token = await resetTokenFor('omar_session@example.com');
+  await fetch(`${BASE}/api/auth/reset`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ token, password: 'replaced-password', confirm_password: 'replaced-password' }),
+  });
+
+  // The cookie is still a perfectly valid JWT. It should stop counting anyway,
+  // because it was handed out before the password changed.
+  const after = await user.call('GET', '/api/auth/me');
+  assert.equal(after.body.user, null, 'the old session must not survive a reset');
+
+  const locked = await user.call('GET', '/api/cart');
+  assert.equal(locked.status, 401);
+});
+
+test('a made-up or expired token is refused', async () => {
+  resetRateLimits();
+
+  const madeUp = await fetch(`${BASE}/api/auth/reset`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ token: 'not-a-real-token', password: 'password-one', confirm_password: 'password-one' }),
+  });
+  assert.equal(madeUp.status, 400);
+
+  // An expired one, aged by hand.
+  const user = await newCustomer('pia_expired');
+  const token = await resetTokenFor('pia_expired@example.com');
+  await run('UPDATE password_resets SET expires_at = ? WHERE token_hash = ?', [
+    new Date(Date.now() - 60_000).toISOString(),
+    hashToken(token),
+  ]);
+
+  resetRateLimits();
+  const stale = await fetch(`${BASE}/api/auth/reset`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ token, password: 'password-two', confirm_password: 'password-two' }),
+  });
+  assert.equal(stale.status, 400);
+
+  // The password must be untouched.
+  resetRateLimits();
+  const login = await fetch(`${BASE}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ username: 'pia_expired', password: 'a-good-password' }),
+  });
+  assert.equal(login.status, 200, 'an expired link must not have changed anything');
+});
+
+test('asking about an address never reveals whether it exists', async () => {
+  await newCustomer('quinn_probe');
+
+  const ask = async (email) => {
+    resetRateLimits();
+    const res = await fetch(`${BASE}/api/auth/forgot`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    return { status: res.status, body: await res.json() };
+  };
+
+  const real = await ask('quinn_probe@example.com');
+  const fake = await ask('nobody-at-all@example.com');
+
+  assert.equal(real.status, fake.status);
+  assert.equal(real.body.message, fake.body.message, 'the reply must not say which exists');
+});
+
+test('asking for a new link cancels the previous one', async () => {
+  await newCustomer('rhea_relink');
+
+  const first = await resetTokenFor('rhea_relink@example.com');
+  const second = await resetTokenFor('rhea_relink@example.com');
+  assert.notEqual(first, second);
+
+  resetRateLimits();
+  const stale = await fetch(`${BASE}/api/auth/reset`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ token: first, password: 'old-link-password', confirm_password: 'old-link-password' }),
+  });
+  assert.equal(stale.status, 400, 'the superseded link must stop working');
+
+  resetRateLimits();
+  const good = await fetch(`${BASE}/api/auth/reset`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ token: second, password: 'new-link-password', confirm_password: 'new-link-password' }),
+  });
+  assert.equal(good.status, 200);
 });
 
 test('checkout refuses a bad pincode', async () => {

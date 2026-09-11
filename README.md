@@ -32,7 +32,7 @@ Running the seed again resets every product's stock to its starting number.
 Customers, carts and orders are left alone.
 
 ```bash
-npm test         # 40 tests
+npm test         # 45 tests
 npm run images   # redraw the 48 product illustrations
 ```
 
@@ -155,6 +155,34 @@ success clears the count, so mistyping your own password twice does nothing.
 The counters live in memory, which is the honest size of the problem for one
 small server - they reset on restart, and several machines would each count
 separately. A shop with real customers would keep them in Redis.
+
+## Forgotten passwords
+
+A reset link proves somebody controls an email address, so the details are
+most of the feature:
+
+- **The token is 32 random bytes**, and only a SHA-256 of it is stored - the
+  same reasoning as passwords. Stealing that table gets you hashes you cannot
+  turn back into working links. SHA-256 rather than bcrypt on purpose: this is
+  a value we generated, not a word a human chose, so there is nothing to guess.
+- **It expires and it works once.** Spent the moment it is used, and asking for
+  a new link cancels the previous one.
+- **Asking about an address never says whether it exists.** The same reply
+  either way, or the form becomes a way of discovering who has an account here.
+- **Resetting signs out sessions opened earlier.** A login cookie cannot be
+  recalled once issued, so `users.password_changed_at` is checked against the
+  cookie's issue time. Without this, somebody who already had access keeps it
+  through the reset meant to remove them.
+
+Email goes through Resend and is switched off unless `RESEND_API_KEY` is set.
+With no key the link is printed to the server console **outside production
+only** - in production it simply does not send, because printing reset links
+into a log is worse than the feature not working.
+
+One thing to know about Resend: until a domain is verified it only delivers to
+the address that owns the account. Everything else is accepted by the API and
+dropped. Fine for a demo, but it is not working email, and the failure looks
+exactly like success.
 
 ## Paying
 
