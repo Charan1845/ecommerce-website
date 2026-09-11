@@ -1,0 +1,77 @@
+# Runs the test suite on every push and every pull request.
+#
+# Two jobs, because the same tests mean different things depending on what is
+# underneath them.
+#
+#   sqlite   - fast, needs nothing, catches almost everything
+#   postgres - slower, and the only run where the two-buyers race is genuinely
+#              parallel: PostgreSQL gives each transaction its own connection,
+#              so both checkouts really do overlap. SQLite queues them.
+#
+# A pull request that breaks either one says so on the pull request itself,
+# before anybody merges it.
+
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  sqlite:
+    name: tests on SQLite
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # The app uses node:sqlite, which arrives in Node 22 and is stable
+          # in 24. Anything older will not start.
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run the tests
+        run: npm test
+
+  postgres:
+    name: tests on PostgreSQL
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: devgear
+          POSTGRES_PASSWORD: devgear-ci-only
+          POSTGRES_DB: devgear_test
+        ports:
+          - 5432:5432
+        # Do not start the tests until the database is actually accepting
+        # connections, or the first one fails for the wrong reason.
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run the tests against real PostgreSQL
+        env:
+          # Local to the runner and thrown away with it, so this password is
+          # not a secret and does not belong in the repository's secrets.
+          DATABASE_URL: postgresql://devgear:devgear-ci-only@localhost:5432/devgear_test
+        run: npm test
