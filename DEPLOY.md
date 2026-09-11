@@ -51,23 +51,30 @@ DATABASE_URL="your-connection-string" npm run dev
 First boot creates the tables, loads the 48 products, and prints the owner
 password once. Save it.
 
-### One gotcha if you use the same database for both
+### Keep development and the deployed site on separate branches
 
-The app fills an empty database on first boot. If you have already pointed
-your laptop at the same Neon branch, the catalogue is no longer empty, so the
-deployed copy will not seed - and there will be no owner account.
+Neon branches are copy-on-write, so a second one is instant and costs nothing
+- the free plan includes ten. This project uses two:
 
-Two ways round it, either is fine:
+| Branch | Used by | Set in |
+|---|---|---|
+| `production` | the deployed site | Render's environment |
+| `development` | your laptop | your local `.env` |
 
-- Create the owner from your laptop before deploying: put `OWNER_PASSWORD` in
-  `.env` and run `npm run seed`. It only creates what is missing.
-- Or give the deployment its own database. Neon branches are free and instant,
-  and your plan includes ten of them: branch `production` for the deployed
-  site, another for your laptop. That is the tidier habit - it means you can
-  never break the live shop by experimenting locally.
+The production connection string is deliberately **not** kept on the laptop,
+so nothing local can reach the live shop by accident. Before this split, test
+orders placed while developing turned up in the real order list and had to be
+deleted by hand.
 
-Note that `npm test` always uses SQLite unless you pass `DATABASE_URL`
-explicitly, so the tests never touch either of them.
+Set the new branch's **auto-delete to Never**. The default is meant for
+throwaway preview branches, and a development branch that vanishes overnight
+fails with a confusing authentication error the next morning.
+
+If you ever wreck the development branch, delete it and make a new one from
+`production` in seconds.
+
+Note that `npm test` uses SQLite unless you pass `DATABASE_URL` explicitly, so
+the tests never touch either of them.
 
 ## Step 3 - put the app somewhere
 
