@@ -921,6 +921,7 @@ td.num, th.num { text-align: right; }
   .auth-brand h2 { font-size: 27px; max-width: none; }
   .auth-brand p.tag { margin-bottom: 22px; }
   .auth-points { display: none; }
+  .keys-3d { display: none; }
   .auth-form-side { padding: 32px 22px 56px; }
 }
 
@@ -937,4 +938,128 @@ td.num, th.num { text-align: right; }
 @media (max-width: 480px) {
   .site-header .wrap { flex-wrap: wrap; height: auto; padding: 10px 0; row-gap: 8px; }
   .site-header nav { flex-wrap: wrap; row-gap: 8px; gap: 8px 14px; font-size: 13px; }
+}
+
+/* ---------- the keycaps on the login panel ----------
+
+   Three keycaps built as actual boxes in space: five faces each, placed with
+   CSS 3D transforms. No WebGL, no library, no model file - which is the point.
+   This sits on the page that gates the whole site, so it had to cost nothing
+   to download.
+
+   Each cap is 62 x 62 x 26. The faces below are just those numbers: half the
+   height forward for the top, half the depth out for the two sides that face
+   us, and so on. Lighting is faked by making each face a slightly different
+   shade, which is most of what sells a box as solid.
+*/
+
+.auth-brand .keys-3d {
+  position: absolute;
+  right: 3%;
+  bottom: 5%;
+  width: 320px;
+  height: 210px;
+  perspective: 1000px;
+  pointer-events: none;
+}
+
+/* The pool of light a backlit board throws under itself. */
+.auth-brand .keys-3d::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 62%;
+  width: 300px;
+  height: 140px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse at center, rgba(96, 165, 250, 0.28), transparent 70%);
+  filter: blur(8px);
+}
+
+.keys-stage {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  /* Where the row rests. keycaps.js reads these two back rather than keeping
+     its own copy, so the caps cannot jump the first time the pointer moves. */
+  --rest-tilt: 50deg;
+  --rest-spin: -28deg;
+  transform: rotateX(var(--tilt, var(--rest-tilt))) rotateZ(var(--spin, var(--rest-spin)));
+  transition: transform 320ms ease-out;
+}
+
+/* The cap itself carries where it sits in the row, and the press. */
+.keycap {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 62px;
+  height: 62px;
+  margin: -31px 0 0 -31px;
+  transform-style: preserve-3d;
+  transform: translate3d(var(--x, 0px), 0, 0);
+  transition: transform 90ms ease-out;
+}
+
+.keycap.down { transform: translate3d(var(--x, 0px), 0, -13px); }
+
+/* The body floats, so the two animations never fight over one transform. */
+.kc-body {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+.kc-body > span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: block;
+}
+
+/* Named through the parent so this outranks the `.kc-body > span` rule above,
+   which is a descendant selector and would otherwise win on specificity and
+   quietly drop the legend into the corner of the face. */
+.kc-body > .kc-top {
+  width: 62px;
+  height: 62px;
+  transform: translate(-50%, -50%) translateZ(13px);
+  border-radius: 6px;
+  background: linear-gradient(150deg, #5b6c92 0%, #33415e 58%, #26314a 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(191, 219, 254, 0.32),
+    inset 0 5px 14px rgba(255, 255, 255, 0.10);
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: #dbeafe;
+  text-shadow: 0 0 6px rgba(191, 219, 254, 0.9), 0 0 18px rgba(96, 165, 250, 0.95);
+  transition: color 90ms ease-out, text-shadow 90ms ease-out;
+}
+
+.keycap.down .kc-top {
+  color: #f0f7ff;
+  text-shadow: 0 0 22px rgba(147, 197, 253, 1);
+}
+
+/* The four walls. Only two are ever facing us, but a box with two sides is
+   a box that falls apart the moment the scene leans the other way. */
+.kc-north, .kc-south { width: 62px; height: 26px; }
+.kc-west,  .kc-east  { width: 26px; height: 62px; }
+
+.kc-north { transform: translate(-50%, -50%) translateY(-31px) rotateX(90deg);  background: #161f33; }
+.kc-south { transform: translate(-50%, -50%) translateY(31px)  rotateX(-90deg); background: linear-gradient(#31405f, #1b2439); }
+.kc-west  { transform: translate(-50%, -50%) translateX(-31px) rotateY(-90deg); background: #161f33; }
+.kc-east  { transform: translate(-50%, -50%) translateX(31px)  rotateY(90deg);  background: linear-gradient(#25304a, #131b2c); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .kc-body { animation: keycap-float 4.8s ease-in-out infinite; }
+  .keycap:nth-child(2) .kc-body { animation-delay: -1.6s; }
+  .keycap:nth-child(3) .kc-body { animation-delay: -3.2s; }
+}
+
+@keyframes keycap-float {
+  0%, 100% { transform: translateZ(0); }
+  50%      { transform: translateZ(9px); }
 }

@@ -82,6 +82,35 @@
         <circle cx="520" cy="620" r="130" fill="#ffffff" opacity="0.08"/>
       </svg>
 
+      <!-- Three keycaps, built as real boxes in CSS 3D rather than drawn flat.
+           They lean towards the pointer and press while you type - see
+           js/keycaps.js for why they never press the key you actually hit. -->
+      <div class="keys-3d" aria-hidden="true">
+        <div class="keys-stage" id="keys-stage">
+          <div class="keycap" style="--x: -72px">
+            <div class="kc-body">
+              <span class="kc-top">D</span>
+              <span class="kc-north"></span><span class="kc-south"></span>
+              <span class="kc-west"></span><span class="kc-east"></span>
+            </div>
+          </div>
+          <div class="keycap" style="--x: 0px">
+            <div class="kc-body">
+              <span class="kc-top">E</span>
+              <span class="kc-north"></span><span class="kc-south"></span>
+              <span class="kc-west"></span><span class="kc-east"></span>
+            </div>
+          </div>
+          <div class="keycap" style="--x: 72px">
+            <div class="kc-body">
+              <span class="kc-top">V</span>
+              <span class="kc-north"></span><span class="kc-south"></span>
+              <span class="kc-west"></span><span class="kc-east"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <a class="logo" href="/">Dev<span>Gear</span></a>
 
       <div>
@@ -215,5 +244,6 @@
 
   <script src="/js/common.js"></script>
   <script src="/js/login.js"></script>
+  <script src="/js/keycaps.js"></script>
 </body>
 </html>
