@@ -35,7 +35,7 @@ function render(product) {
 
   document.getElementById('detail').innerHTML = `
     <div class="detail">
-      <div>${thumbHtml(product, false)}</div>
+      <div>${thumbHtml(product, { badge: false, size: 'full' })}</div>
       <div>
         <div class="card-brand">${esc(product.brand)} &middot; ${esc(product.category)}</div>
         <h1>${esc(product.name)}</h1>

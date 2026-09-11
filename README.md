@@ -323,6 +323,11 @@ sold under another company's name is the one thing worth being strict about.
 Photographs are matched to what each product is rather than taken in order,
 after a product called Earbuds was handed a photograph of over-ear headphones.
 
+Each photograph is saved twice: the full size for the product page, and a
+smaller `-card.jpg` for the grid, which is about 280px wide and was otherwise
+downloading roughly three times the pixels it could show - forty-eight times
+over. The catalogue went from 2.76 MB of photographs to 1.10 MB.
+
 `scripts/make-images.js` still generates a drawing per product, in each
 brand's colour, and works if you ever want the catalogue back on
 illustrations. An earlier version of the photo fetcher used Wikimedia Commons,

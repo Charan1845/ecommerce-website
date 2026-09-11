@@ -75,19 +75,33 @@ function initials(brand) {
     .toUpperCase();
 }
 
-/** The picture area of a card: a real photo when we have one, a tile when we do not. */
-function thumbHtml(product, badge = true) {
+/**
+ * The picture area of a card: a real photo when we have one, a tile when we do not.
+ *
+ * `size` picks which file to ask for. A grid card is about 280px wide, so
+ * sending it the 940px product-page photograph means downloading roughly
+ * three times the pixels it can show - on a page that loads 48 of them.
+ */
+function thumbHtml(product, { badge = true, size = 'card' } = {}) {
   let inner;
   if (product.image) {
+    const file =
+      size === 'card' ? product.image.replace(/\.jpg$/i, '-card.jpg') : product.image;
     // A photograph fills the card; a drawing sits inside it with room to
     // breathe. Cropping an illustration cuts the product in half, and
     // letterboxing a photograph leaves grey bands down the sides.
     const kind = /\.svg$/i.test(product.image) ? 'art' : 'photo';
 
-    inner = `<img class="${kind}" src="/images/products/${esc(product.image)}"
-              alt="${esc(product.name)}" loading="lazy"
-              onerror="this.replaceWith(Object.assign(document.createElement('span'),
-                       {className:'initials', textContent:'${esc(initials(product.brand))}'}))">`;
+    // A grid of 48 cards should load as you scroll. The product page's photo
+    // is the main thing on the page and above the fold, so waiting for a
+    // lazy-load pass just delays the one image the visitor came to see.
+    const loading = size === 'card' ? 'loading="lazy"' : 'loading="eager" fetchpriority="high"';
+
+    // If the smaller file is missing for any reason, fall back to the full
+    // one rather than showing the brand-initials tile.
+    inner = `<img class="${kind}" src="/images/products/${esc(file)}"
+              alt="${esc(product.name)}" ${loading}
+              onerror="this.onerror=null; this.src='/images/products/${esc(product.image)}'">`;
   } else {
     inner = `<span class="initials">${esc(initials(product.brand))}</span>`;
   }

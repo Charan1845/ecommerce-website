@@ -166,12 +166,16 @@ function usable(photo, category) {
   const ratio = photo.width / photo.height;
   if (ratio < 1.1 || ratio > 2.2) return null;
 
+  // Two sizes. `large` is about 940px wide, which suits the product page;
+  // `medium` is about a third of the bytes and is all a 280px card needs.
   const src = photo.src?.large || photo.src?.medium;
+  const cardSrc = photo.src?.medium || src;
   if (!src) return null;
 
   return {
     id: photo.id,
     src,
+    cardSrc,
     alt: photo.alt || '',
     photographer: photo.photographer || 'Unknown',
     photographer_url: photo.photographer_url || null,
@@ -216,6 +220,49 @@ function suitability(product, candidate) {
   return score;
 }
 
+/** "kb-01.jpg" -> "kb-01-card.jpg" */
+function cardName(filename) {
+  return filename.replace(/\.jpg$/, '-card.jpg');
+}
+
+/**
+ * Fetch only the small card version for photographs already chosen.
+ *
+ * Re-running the whole selection would pick different photographs and
+ * reshuffle a catalogue somebody has already looked at. This reads the
+ * existing credits, asks Pexels for each photograph by id, and downloads the
+ * smaller size beside the one already there.
+ */
+async function topUpCardSizes(key) {
+  const credits = JSON.parse(fs.readFileSync(CREDITS, 'utf8'));
+  let added = 0;
+  let skipped = 0;
+
+  for (const [filename, credit] of Object.entries(credits)) {
+    const target = path.join(OUT_DIR, cardName(filename));
+    if (fs.existsSync(target)) {
+      skipped += 1;
+      continue;
+    }
+
+    const res = await fetch(`https://api.pexels.com/v1/photos/${credit.id}`, {
+      headers: { authorization: key },
+    });
+    if (!res.ok) {
+      console.log(`  ! ${filename}: Pexels returned ${res.status}`);
+      continue;
+    }
+
+    const photo = await res.json();
+    const src = photo.src?.medium || photo.src?.large;
+    const size = await download(src, target);
+    added += 1;
+    console.log(`  ${cardName(filename)}  ${(size / 1024).toFixed(0)}KB`);
+  }
+
+  console.log(`\n${added} card-sized photographs added, ${skipped} already there.`);
+}
+
 async function download(url, destination) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`download failed: ${res.status}`);
@@ -232,6 +279,13 @@ async function download(url, destination) {
 
 async function main() {
   const key = apiKey();
+
+  // `npm run photos -- --cards-only` tops up the small sizes without
+  // choosing different photographs.
+  if (process.argv.includes('--cards-only')) {
+    return topUpCardSizes(key);
+  }
+
   const products = JSON.parse(fs.readFileSync(CATALOGUE, 'utf8'));
   fs.mkdirSync(OUT_DIR, { recursive: true });
 
@@ -298,6 +352,10 @@ async function main() {
 
       try {
         const size = await download(pick.src, path.join(OUT_DIR, filename));
+        const cardSize = await download(
+          pick.cardSrc,
+          path.join(OUT_DIR, cardName(filename))
+        );
         credits[filename] = {
           product: product.name,
           source: 'Pexels',
@@ -309,7 +367,10 @@ async function main() {
           licence_url: 'https://www.pexels.com/license/',
           alt: pick.alt,
         };
-        console.log(`  ${filename}  ${(size / 1024).toFixed(0)}KB  ${pick.photographer}  "${pick.alt.slice(0, 40)}"`);
+        console.log(
+          `  ${filename}  ${(size / 1024).toFixed(0)}KB` +
+            ` + card ${(cardSize / 1024).toFixed(0)}KB  ${pick.photographer}`
+        );
       } catch (err) {
         console.log(`  ! ${filename}: ${err.message}`);
         failures += 1;
