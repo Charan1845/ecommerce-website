@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img"
+     aria-label="PULSE Radeon RX 7600 Graphics Card">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="screen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#334155"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#e2e8f0"/>
+      <stop offset="45%" stop-color="#94a3b8"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#0f172a" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <circle cx="690" cy="110" r="150" fill="#0a5ad6" opacity="0.10"/>
+  <ellipse cx="400" cy="530" rx="250" ry="26" fill="#0f172a" opacity="0.07"/>
+
+  <g filter="url(#soft)">
+    
+    <rect x="181.5" y="195" width="437" height="210" rx="12" fill="#1f2937"/>
+    <rect x="181.5" y="195" width="437" height="210" rx="12" fill="none" stroke="#0a5ad6" stroke-width="3"/>
+    
+      <circle cx="290.75" cy="300" r="62" fill="#374151"/>
+      <circle cx="290.75" cy="300" r="54" fill="none" stroke="#0a5ad6" stroke-width="2" opacity="0.6"/>
+      
+    <circle cx="290.75" cy="300" r="52" fill="#0f172a"/>
+    <path d="M 290.75 300 L 334.8 300.0" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 290.75 300 L 324.5 328.3" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 290.75 300 L 298.4 343.3" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 290.75 300 L 268.8 338.1" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 290.75 300 L 249.4 315.0" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 290.75 300 L 249.4 285.0" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 290.75 300 L 268.8 261.9" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 290.75 300 L 298.4 256.7" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 290.75 300 L 324.5 271.7" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="290.75" cy="300" r="12" fill="#0a5ad6"/>
+      <circle cx="509.25" cy="300" r="62" fill="#374151"/>
+      <circle cx="509.25" cy="300" r="54" fill="none" stroke="#0a5ad6" stroke-width="2" opacity="0.6"/>
+      
+    <circle cx="509.25" cy="300" r="52" fill="#0f172a"/>
+    <path d="M 509.25 300 L 553.3 300.0" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 509.25 300 L 543.0 328.3" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 509.25 300 L 516.9 343.3" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 509.25 300 L 487.3 338.1" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 509.25 300 L 467.9 315.0" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 509.25 300 L 467.9 285.0" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 509.25 300 L 487.3 261.9" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 509.25 300 L 516.9 256.7" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 509.25 300 L 543.0 271.7" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="509.25" cy="300" r="12" fill="#0a5ad6"/>
+    <rect x="165.5" y="185" width="16" height="230" rx="3" fill="url(#metal)"/>
+    <rect x="221.5" y="405" width="150" height="16" rx="2" fill="#d4a017"/>
+  </g>
+</svg>

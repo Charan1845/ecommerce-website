@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img"
+     aria-label="LE720 360mm Liquid Cooler">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="screen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#334155"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#e2e8f0"/>
+      <stop offset="45%" stop-color="#94a3b8"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#0f172a" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <circle cx="690" cy="110" r="150" fill="#0f766e" opacity="0.10"/>
+  <ellipse cx="400" cy="530" rx="250" ry="26" fill="#0f172a" opacity="0.07"/>
+
+  <g filter="url(#soft)">
+    
+      <rect x="210" y="110" width="380" height="144" rx="8" fill="#374151"/>
+      
+        <rect x="227" y="127" width="110" height="110" rx="6" fill="#1f2937"/>
+        
+    <circle cx="282" cy="182" r="47" fill="#0f172a"/>
+    <path d="M 282 182 L 321.0 182.0" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 282 182 L 311.9 207.1" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 282 182 L 288.8 220.4" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 282 182 L 262.5 215.8" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 282 182 L 245.4 195.3" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 282 182 L 245.4 168.7" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 282 182 L 262.5 148.2" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 282 182 L 288.8 143.6" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 282 182 L 311.9 156.9" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="282" cy="182" r="11" fill="#0f766e"/>
+        <rect x="345" y="127" width="110" height="110" rx="6" fill="#1f2937"/>
+        
+    <circle cx="400" cy="182" r="47" fill="#0f172a"/>
+    <path d="M 400 182 L 439.0 182.0" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 400 182 L 429.9 207.1" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 400 182 L 406.8 220.4" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 400 182 L 380.5 215.8" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 400 182 L 363.4 195.3" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 400 182 L 363.4 168.7" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 400 182 L 380.5 148.2" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 400 182 L 406.8 143.6" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 400 182 L 429.9 156.9" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="400" cy="182" r="11" fill="#0f766e"/>
+        <rect x="463" y="127" width="110" height="110" rx="6" fill="#1f2937"/>
+        
+    <circle cx="518" cy="182" r="47" fill="#0f172a"/>
+    <path d="M 518 182 L 557.0 182.0" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 518 182 L 547.9 207.1" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 518 182 L 524.8 220.4" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 518 182 L 498.5 215.8" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 518 182 L 481.4 195.3" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 518 182 L 481.4 168.7" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 518 182 L 498.5 148.2" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 518 182 L 524.8 143.6" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 518 182 L 547.9 156.9" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="518" cy="182" r="11" fill="#0f766e"/>
+      <path d="M 234 254 q -46 120 100 150" stroke="#374151" stroke-width="18" fill="none" stroke-linecap="round"/>
+      <path d="M 566 254 q 46 120 -280 150" stroke="#374151" stroke-width="18" fill="none" stroke-linecap="round"/>
+      <circle cx="400" cy="414" r="72" fill="#1f2937"/>
+      <circle cx="400" cy="414" r="56" fill="none" stroke="#0f766e" stroke-width="4"/>
+      <circle cx="400" cy="414" r="30" fill="#0f766e" opacity="0.85"/>
+  </g>
+</svg>

@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img"
+     aria-label="Hellhound Radeon RX 7800 XT Graphics Card">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="screen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#334155"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#e2e8f0"/>
+      <stop offset="45%" stop-color="#94a3b8"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#0f172a" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <circle cx="690" cy="110" r="150" fill="#e4002b" opacity="0.10"/>
+  <ellipse cx="400" cy="530" rx="250" ry="26" fill="#0f172a" opacity="0.07"/>
+
+  <g filter="url(#soft)">
+    
+    <rect x="80" y="195" width="640" height="210" rx="12" fill="#1f2937"/>
+    <rect x="80" y="195" width="640" height="210" rx="12" fill="none" stroke="#e4002b" stroke-width="3"/>
+    
+      <circle cx="186.66666666666669" cy="300" r="62" fill="#374151"/>
+      <circle cx="186.66666666666669" cy="300" r="54" fill="none" stroke="#e4002b" stroke-width="2" opacity="0.6"/>
+      
+    <circle cx="186.66666666666669" cy="300" r="52" fill="#0f172a"/>
+    <path d="M 186.66666666666669 300 L 230.7 300.0" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 186.66666666666669 300 L 220.4 328.3" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 186.66666666666669 300 L 194.3 343.3" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 186.66666666666669 300 L 164.7 338.1" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 186.66666666666669 300 L 145.3 315.0" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 186.66666666666669 300 L 145.3 285.0" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 186.66666666666669 300 L 164.7 261.9" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 186.66666666666669 300 L 194.3 256.7" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 186.66666666666669 300 L 220.4 271.7" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="186.66666666666669" cy="300" r="12" fill="#e4002b"/>
+      <circle cx="400" cy="300" r="62" fill="#374151"/>
+      <circle cx="400" cy="300" r="54" fill="none" stroke="#e4002b" stroke-width="2" opacity="0.6"/>
+      
+    <circle cx="400" cy="300" r="52" fill="#0f172a"/>
+    <path d="M 400 300 L 444.0 300.0" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 400 300 L 433.7 328.3" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 400 300 L 407.6 343.3" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 400 300 L 378.0 338.1" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 400 300 L 358.7 315.0" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 400 300 L 358.7 285.0" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 400 300 L 378.0 261.9" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 400 300 L 407.6 256.7" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 400 300 L 433.7 271.7" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="400" cy="300" r="12" fill="#e4002b"/>
+      <circle cx="613.3333333333334" cy="300" r="62" fill="#374151"/>
+      <circle cx="613.3333333333334" cy="300" r="54" fill="none" stroke="#e4002b" stroke-width="2" opacity="0.6"/>
+      
+    <circle cx="613.3333333333334" cy="300" r="52" fill="#0f172a"/>
+    <path d="M 613.3333333333334 300 L 657.3 300.0" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 613.3333333333334 300 L 647.0 328.3" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 613.3333333333334 300 L 621.0 343.3" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 613.3333333333334 300 L 591.3 338.1" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 613.3333333333334 300 L 572.0 315.0" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 613.3333333333334 300 L 572.0 285.0" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 613.3333333333334 300 L 591.3 261.9" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 613.3333333333334 300 L 621.0 256.7" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/><path d="M 613.3333333333334 300 L 647.0 271.7" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="613.3333333333334" cy="300" r="12" fill="#e4002b"/>
+    <rect x="64" y="185" width="16" height="230" rx="3" fill="url(#metal)"/>
+    <rect x="120" y="405" width="150" height="16" rx="2" fill="#d4a017"/>
+  </g>
+</svg>

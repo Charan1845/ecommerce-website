@@ -56,6 +56,15 @@ const API = 'https://api.pexels.com/v1/search';
  * So the last filter is a person looking at all 48 and writing ids down here.
  * Rebuilding the catalogue then skips them.
  */
+/** Whatever attribution has already been recorded. */
+function loadCredits() {
+  try {
+    return JSON.parse(fs.readFileSync(CREDITS, 'utf8'));
+  } catch {
+    return {};
+  }
+}
+
 function blocklist() {
   try {
     return new Set(JSON.parse(fs.readFileSync(BLOCKLIST, 'utf8')).map((e) => String(e.id)));
@@ -82,6 +91,19 @@ const SEARCHES = {
     'gaming monitor',
     'widescreen monitor desk',
   ],
+
+  // The parts half of the catalogue. Harder to photograph honestly than
+  // peripherals: a keyboard photographed on a desk is just a keyboard, but
+  // most stock photographs of a graphics card are of somebody's actual
+  // graphics card, with the maker's name across the shroud.
+  Processors: ['computer processor', 'cpu chip', 'microprocessor', 'cpu socket motherboard'],
+  Motherboards: ['motherboard', 'computer motherboard', 'pc motherboard closeup', 'mainboard'],
+  'Graphics Cards': ['graphics card', 'gpu computer', 'video card pc', 'graphics card closeup'],
+  Memory: ['ram memory', 'computer ram stick', 'memory module', 'ddr ram'],
+  Storage: ['ssd drive', 'solid state drive', 'hard drive disk', 'nvme ssd', 'hard disk drive'],
+  'Power Supplies': ['power supply computer', 'pc power supply unit', 'computer psu'],
+  Cabinets: ['computer case', 'pc tower case', 'gaming pc build', 'desktop computer tower'],
+  Cooling: ['cpu cooler', 'pc cooling fan', 'computer fan', 'liquid cooling pc', 'heatsink'],
 };
 
 /**
@@ -112,6 +134,14 @@ const MUST_MENTION = {
   Mouse: /\bmouse\b|\bmice\b/i,
   Headsets: /headphone|headset|earbud|earphone/i,
   Monitors: /monitor|screen|display/i,
+  Processors: /processor|cpu|chip|microprocessor/i,
+  Motherboards: /motherboard|mainboard|circuit board/i,
+  'Graphics Cards': /graphic|gpu|video card/i,
+  Memory: /ram|memory|module/i,
+  Storage: /ssd|hard.?d(rive|isk)|hdd|nvme|solid.state|storage|disk/i,
+  'Power Supplies': /power supply|psu/i,
+  Cabinets: /case|tower|chassis|desktop computer/i,
+  Cooling: /cooler|cooling|fan|heatsink|radiator/i,
 };
 
 function apiKey() {
@@ -204,6 +234,14 @@ const PRODUCT_WANTS = [
   [/\bmini\b|60%/i, /compact|small|mini|60/i, 2],
   [/combo/i, /keyboard and mouse|combo|setup/i, 2],
   [/curved|27-inch/i, /curved|ultrawide|large/i, 1],
+  [/liquid cooler/i, /liquid|water|radiator|aio/i, 5],
+  [/cpu cooler/i, /heatsink|tower|air|fan/i, 3],
+  [/nvme|m\.2/i, /nvme|m\.2|stick|small/i, 4],
+  [/hard drive/i, /hard.?d(rive|isk)|hdd|platter|mechanical/i, 5],
+  [/sata ssd/i, /ssd|solid.state|2\.5/i, 3],
+  [/mid tower|micro tower/i, /tower|case|chassis/i, 3],
+  [/ddr5/i, /ddr5|ram|memory/i, 2],
+  [/graphics card/i, /graphic|gpu|video card/i, 3],
 ];
 
 function suitability(product, candidate) {
@@ -289,13 +327,36 @@ async function main() {
   const products = JSON.parse(fs.readFileSync(CATALOGUE, 'utf8'));
   fs.mkdirSync(OUT_DIR, { recursive: true });
 
-  const credits = {};
+  /**
+   * `npm run photos -- --only="Processors,Memory"` fetches just those.
+   *
+   * Without it, adding a range to the catalogue means re-running the whole
+   * thing, which re-picks photographs for products that already have good
+   * ones - throwing away the work that went into choosing them by eye.
+   */
+  const onlyArg = process.argv.find((a) => a.startsWith('--only='));
+  const only = onlyArg
+    ? new Set(onlyArg.slice('--only='.length).split(',').map((c) => c.trim()).filter(Boolean))
+    : null;
+
+  if (only) {
+    const unknown = [...only].filter((c) => !SEARCHES[c]);
+    if (unknown.length) throw new Error(`no searches defined for: ${unknown.join(', ')}`);
+    console.log(`only fetching: ${[...only].join(', ')}`);
+  }
+
+  // Existing credits are merged into rather than replaced, so a partial run
+  // does not erase attribution for photographs it never touched.
+  const credits = only ? loadCredits() : {};
   const seen = blocklist();
   if (seen.size) console.log(`skipping ${seen.size} photo(s) rejected by eye`);
   let failures = 0;
 
   for (const [category, queries] of Object.entries(SEARCHES)) {
+    if (only && !only.has(category)) continue;
+
     const wanted = products.filter((p) => p.category === category);
+    if (!wanted.length) continue;
     const candidates = [];
 
     for (const query of queries) {
@@ -384,20 +445,18 @@ async function main() {
     return;
   }
 
-  // Only once every product has a photograph: point the catalogue at them.
-  // A half-photographed shop looks worse than one that is all drawings.
-  const updated = JSON.parse(fs.readFileSync(CATALOGUE, 'utf8')).map((p) => ({
-    ...p,
-    image: p.image.replace(/\.\w+$/, '.jpg'),
-  }));
-
-  const text = fs.readFileSync(CATALOGUE, 'utf8').replace(/\.svg"/g, '.jpg"');
-  fs.writeFileSync(CATALOGUE, text);
+  // A whole run points the catalogue at the photographs once every product
+  // has one - a half-photographed shop looks worse than one that is all
+  // drawings. A partial run leaves the catalogue alone: the filenames it is
+  // filling in were already .jpg before it started.
+  if (!only) {
+    const text = fs.readFileSync(CATALOGUE, 'utf8').replace(/\.svg"/g, '.jpg"');
+    fs.writeFileSync(CATALOGUE, text);
+  }
 
   fs.writeFileSync(CREDITS, `${JSON.stringify(credits, null, 2)}\n`);
 
-  console.log(`\n${updated.length} photographs downloaded and credited.`);
-  console.log('data/products.json now points at them. Run  npm run seed  to update the database.');
+  console.log('\nDone. Run  npm run seed  to update the database.');
 }
 
 main().catch((err) => {

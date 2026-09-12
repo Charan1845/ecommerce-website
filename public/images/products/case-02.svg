@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img"
+     aria-label="LANCOOL 216 Mid Tower Cabinet">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="screen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#334155"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#e2e8f0"/>
+      <stop offset="45%" stop-color="#94a3b8"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#0f172a" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <circle cx="690" cy="110" r="150" fill="#0ea5e9" opacity="0.10"/>
+  <ellipse cx="400" cy="530" rx="250" ry="26" fill="#0f172a" opacity="0.07"/>
+
+  <g filter="url(#soft)">
+    
+    <rect x="230" y="65" width="340" height="470" rx="12" fill="#1f2937"/>
+    <rect x="248" y="83" width="304" height="434" rx="8" fill="#0f172a" opacity="0.85"/>
+    <rect x="248" y="83" width="304" height="434" rx="8"
+          fill="none" stroke="#0ea5e9" stroke-width="2" opacity="0.6"/>
+
+    <rect x="270" y="109" width="230" height="197" rx="5" fill="#14532d" opacity="0.75"/>
+    <rect x="282" y="324" width="220" height="42" rx="5" fill="#0ea5e9" opacity="0.7"/>
+    <rect x="264" y="439" width="272" height="58" rx="6" fill="#374151"/>
+
+    <circle cx="528" cy="135" r="30" fill="#374151"/>
+     <circle cx="528" cy="135" r="22" fill="none" stroke="#0ea5e9" stroke-width="3" opacity="0.8"/><circle cx="528" cy="227" r="30" fill="#374151"/>
+     <circle cx="528" cy="227" r="22" fill="none" stroke="#0ea5e9" stroke-width="3" opacity="0.8"/><circle cx="528" cy="319" r="30" fill="#374151"/>
+     <circle cx="528" cy="319" r="22" fill="none" stroke="#0ea5e9" stroke-width="3" opacity="0.8"/>
+
+    <rect x="250" y="535" width="46" height="14" rx="4" fill="#374151"/>
+    <rect x="504" y="535" width="46" height="14" rx="4" fill="#374151"/>
+  </g>
+</svg>
