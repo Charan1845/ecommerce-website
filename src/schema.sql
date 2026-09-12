@@ -87,7 +87,15 @@ CREATE TABLE IF NOT EXISTS orders (
   paid_at             TEXT,
   -- 'razorpay' or 'sandbox'. Recorded so a receipt can never quietly imply
   -- money moved when it was the simulator.
-  payment_provider    TEXT
+  payment_provider    TEXT,
+  -- Where the order has got to physically, which is a different question from
+  -- whether it has been paid for. An order can be paid and still in a box on a
+  -- shelf, or shipped and still unpaid. Two axes, two columns - folding them
+  -- into one would mean inventing statuses like 'paid-and-shipped' and then
+  -- 'paid-and-shipped-and-partly-refunded'.
+  fulfilment_status   TEXT NOT NULL DEFAULT 'processing'
+                      CHECK (fulfilment_status IN
+                        ('processing', 'packed', 'shipped', 'delivered', 'cancelled'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_orders_user ON orders (user_id, placed_at DESC);
@@ -132,3 +140,26 @@ CREATE TABLE IF NOT EXISTS password_resets (
 );
 
 CREATE INDEX IF NOT EXISTS idx_password_resets_user ON password_resets (user_id);
+
+-- Every move an order has made, in order.
+--
+-- orders.fulfilment_status is the authority - one column, updated
+-- conditionally, so two people pressing "ship" at the same moment cannot both
+-- win. This table is the history beside it: what changed, when, and who did
+-- it. Both are written in the same transaction, so they cannot disagree.
+--
+-- Deriving the current state from the newest row here instead would be tidier
+-- and would lose the thing that matters: you cannot conditionally update a row
+-- that does not exist yet, so two simultaneous inserts would both succeed.
+CREATE TABLE IF NOT EXISTS order_events (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  order_id   INTEGER NOT NULL REFERENCES orders (id) ON DELETE CASCADE,
+  -- Null for anything the shop did to itself rather than a person doing it.
+  actor_id   INTEGER REFERENCES users (id),
+  from_state TEXT,
+  to_state   TEXT    NOT NULL,
+  note       TEXT,
+  at         TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_order_events_order ON order_events (order_id, id);

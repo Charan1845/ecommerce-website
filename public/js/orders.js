@@ -20,6 +20,70 @@ function when(value) {
   });
 }
 
+/**
+ * Where the order has got to, drawn as a line of steps.
+ *
+ * Both the steps that have happened and the ones still to come are shown, so
+ * the customer can see what is left rather than only what is done. A cancelled
+ * order abandons the line entirely - showing "shipped" and "delivered" greyed
+ * out beneath a cancellation would be promising something that is not coming.
+ */
+function timelineHtml(order) {
+  const steps = order.timeline || [];
+  if (!steps.length) return '';
+
+  const cancelled = steps.some((s) => s.state === 'cancelled');
+  const done = new Set(steps.map((s) => s.state));
+  const stampOf = new Map(steps.map((s) => [s.state, s]));
+
+  const sequence = cancelled
+    ? steps.map((s) => s.state)
+    : order.journey || steps.map((s) => s.state);
+
+  const items = sequence
+    .map((state) => {
+      const step = stampOf.get(state);
+      const reached = done.has(state);
+
+      return `<li class="track-step ${reached ? 'done' : 'todo'} ${
+        state === 'cancelled' ? 'cancelled' : ''
+      }">
+          <span class="track-dot" aria-hidden="true"></span>
+          <span class="track-body">
+            <span class="track-label">${esc(step ? step.label : LABELS[state] || state)}</span>
+            ${step ? `<span class="track-when">${when(step.at)}</span>` : ''}
+            ${step && step.note ? `<span class="track-note">${esc(step.note)}</span>` : ''}
+          </span>
+        </li>`;
+    })
+    .join('');
+
+  const now = steps[steps.length - 1];
+
+  return `<div class="track">
+      <div class="track-head">
+        <span class="label">Progress</span>
+        <span class="track-now">${esc(now.blurb || '')}</span>
+      </div>
+      <ol class="track-steps">${items}</ol>
+    </div>`;
+}
+
+/**
+ * Names for steps that have not happened yet.
+ *
+ * The server only describes steps that exist, so anything still ahead needs a
+ * name from somewhere. Kept deliberately short - this is a fallback for the
+ * unreached half of the line, not a second copy of the state machine.
+ */
+const LABELS = {
+  processing: 'Order placed',
+  packed: 'Packed',
+  shipped: 'Shipped',
+  delivered: 'Delivered',
+  cancelled: 'Cancelled',
+};
+
 function orderCard(order) {
   const rows = order.items
     .map(
@@ -62,6 +126,9 @@ function orderCard(order) {
       <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:14px">
         <h2 style="margin:0">Order #${order.id}</h2>
         <span class="pill ${esc(order.status)}">${esc(order.status)}</span>
+        <span class="pill fulfil ${esc(order.fulfilment_status || 'processing')}">${esc(
+          LABELS[order.fulfilment_status || 'processing']
+        )}</span>
         <span style="color:var(--ink-soft)">${when(order.placed_at)}</span>
         <strong style="margin-left:auto; font-size:18px">${rupees(order.total_paise)}</strong>
       </div>
@@ -79,6 +146,8 @@ function orderCard(order) {
           <tbody>${rows}</tbody>
         </table>
       </div>
+
+      ${timelineHtml(order)}
 
       ${payRow}
       ${paidNote}

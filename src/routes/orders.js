@@ -11,6 +11,7 @@ const express = require('express');
 const { all, get } = require('../db');
 const { requireAuth } = require('../auth');
 const { placeOrder, OutOfStock } = require('../checkout');
+const { timeline, JOURNEY } = require('../fulfilment');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -78,7 +79,7 @@ router.post('/', async (req, res, next) => {
 router.get('/', async (req, res, next) => {
   try {
     const orders = await all(
-      `SELECT id, status, total_paise, placed_at,
+      `SELECT id, status, fulfilment_status, total_paise, placed_at,
               razorpay_payment_id, paid_at, payment_provider
        FROM orders WHERE user_id = ? ORDER BY placed_at DESC, id DESC`,
       [req.user.id]
@@ -90,6 +91,9 @@ router.get('/', async (req, res, next) => {
          FROM order_items WHERE order_id = ?`,
         [order.id]
       );
+
+      order.timeline = await timeline(order.id);
+      order.journey = JOURNEY;
     }
 
     return res.json({ orders });
@@ -118,6 +122,9 @@ router.get('/:id', async (req, res, next) => {
        FROM order_items WHERE order_id = ?`,
       [order.id]
     );
+
+    order.timeline = await timeline(order.id);
+    order.journey = JOURNEY;
 
     return res.json({ order });
   } catch (err) {

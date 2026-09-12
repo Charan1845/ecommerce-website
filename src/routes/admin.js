@@ -10,6 +10,7 @@ const express = require('express');
 const { all, get, run } = require('../db');
 const { requireOwner } = require('../auth');
 const { runRace, raceable } = require('../race-demo');
+const { advance, nextStates, timeline, STATES, NotAllowed } = require('../fulfilment');
 
 const router = express.Router();
 router.use(requireOwner);
@@ -32,6 +33,11 @@ router.get('/orders', async (req, res, next) => {
       params.push(req.query.status);
     }
 
+    if (STATES.includes(req.query.fulfilment)) {
+      conditions.push('o.fulfilment_status = ?');
+      params.push(req.query.fulfilment);
+    }
+
     if (req.query.q) {
       // LOWER on both sides so this behaves the same on SQLite and
       // PostgreSQL. Values travel as parameters, never glued into the SQL.
@@ -49,7 +55,7 @@ router.get('/orders', async (req, res, next) => {
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const orders = await all(
-      `SELECT o.id, o.status, o.total_paise, o.placed_at,
+      `SELECT o.id, o.status, o.fulfilment_status, o.total_paise, o.placed_at,
               o.shipping_name, o.shipping_phone, o.shipping_address,
               o.shipping_state, o.shipping_pincode,
               o.razorpay_payment_id, o.paid_at, o.payment_provider,
@@ -67,6 +73,11 @@ router.get('/orders', async (req, res, next) => {
          FROM order_items WHERE order_id = ?`,
         [order.id]
       );
+
+      // The buttons the page may draw are decided here, not in the page. A
+      // page that worked out its own options would eventually offer one the
+      // server refuses.
+      order.next_states = nextStates(order.fulfilment_status);
     }
 
     return res.json({ orders, count: orders.length });
@@ -106,6 +117,62 @@ router.get('/customers', async (_req, res, next) => {
         paid_paise: Number(c.paid_paise),
       })),
     });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /api/admin/orders/:id/status  { to, note }
+ *
+ * Move an order along: packed, shipped, delivered, or cancelled.
+ *
+ * Every rule about which moves are legal lives in src/fulfilment.js, and
+ * cancelling there also puts the stock back. This route only turns its
+ * refusals into status codes.
+ */
+router.post('/orders/:id/status', async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) {
+      return res.status(400).json({ error: 'Bad order id.' });
+    }
+
+    const note = typeof req.body?.note === 'string' ? req.body.note.trim().slice(0, 200) : null;
+
+    const moved = await advance({
+      orderId: id,
+      to: req.body?.to,
+      actorId: req.user.id,
+      note: note || null,
+    });
+
+    const order = await get(
+      'SELECT id, status, fulfilment_status, total_paise FROM orders WHERE id = ?',
+      [id]
+    );
+
+    return res.json({
+      order: { ...order, next_states: nextStates(order.fulfilment_status) },
+      moved,
+      timeline: await timeline(id),
+    });
+  } catch (err) {
+    if (err instanceof NotAllowed) {
+      return res.status(err.status).json({ error: err.message });
+    }
+    return next(err);
+  }
+});
+
+/** GET /api/admin/orders/:id/timeline - everything that has happened to it. */
+router.get('/orders/:id/timeline', async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) {
+      return res.status(400).json({ error: 'Bad order id.' });
+    }
+    return res.json({ timeline: await timeline(id) });
   } catch (err) {
     return next(err);
   }

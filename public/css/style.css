@@ -1233,3 +1233,99 @@ td.num, th.num { text-align: right; }
      it is talking about. */
   .build-summary { position: static; }
 }
+
+/* ---------- where an order has got to ---------- */
+
+/* The fulfilment pill sits beside the payment pill and must not be mistaken
+   for it - they answer different questions. Outlined rather than filled. */
+.pill.fulfil {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+}
+.pill.fulfil.packed    { border-color: var(--accent); color: var(--accent); }
+.pill.fulfil.shipped   { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.pill.fulfil.delivered { border-color: var(--good); color: var(--good); background: var(--good-bg); }
+.pill.fulfil.cancelled { border-color: var(--bad); color: var(--bad); background: var(--bad-bg); }
+
+/* The customer's progress line. */
+.track {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--soft-bg);
+}
+
+.track-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  margin-bottom: 12px;
+}
+
+.track-now { font-size: 13px; color: var(--ink-soft); }
+
+.track-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0;
+}
+
+.track-step {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding-bottom: 16px;
+}
+
+.track-step:last-child { padding-bottom: 0; }
+
+/* The line joining the dots, drawn from each step down to the next. */
+.track-step:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 14px;
+  bottom: 0;
+  width: 2px;
+  background: var(--line);
+}
+
+.track-step.done:not(:last-child)::before { background: var(--accent); }
+
+.track-dot {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-top: 3px;
+  background: var(--card);
+  border: 2px solid var(--line);
+}
+
+.track-step.done .track-dot { background: var(--accent); border-color: var(--accent); }
+.track-step.cancelled .track-dot { background: var(--bad); border-color: var(--bad); }
+
+.track-body { display: grid; gap: 1px; }
+.track-label { font-size: 13.5px; font-weight: 600; }
+.track-step.todo .track-label { color: var(--ink-faint); font-weight: 400; }
+.track-when { font-size: 12px; color: var(--ink-soft); }
+.track-note { font-size: 12px; color: var(--ink-soft); font-style: italic; }
+
+/* The owner's move buttons. */
+.order-moves {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.order-moves .label { margin-right: 2px; }
+.order-moves .small { color: var(--ink-soft); }

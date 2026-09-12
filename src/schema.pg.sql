@@ -87,7 +87,12 @@ CREATE TABLE IF NOT EXISTS orders (
   paid_at             TIMESTAMPTZ,
   -- 'razorpay' or 'sandbox'. Recorded so a receipt can never quietly imply
   -- money moved when it was the simulator.
-  payment_provider    VARCHAR(20)
+  payment_provider    VARCHAR(20),
+  -- See the note in schema.sql: where the order physically is, which is a
+  -- different question from whether it has been paid for.
+  fulfilment_status   VARCHAR(16) NOT NULL DEFAULT 'processing'
+                      CHECK (fulfilment_status IN
+                        ('processing', 'packed', 'shipped', 'delivered', 'cancelled'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_orders_user ON orders (user_id, placed_at DESC);
@@ -132,3 +137,18 @@ CREATE TABLE IF NOT EXISTS password_resets (
 );
 
 CREATE INDEX IF NOT EXISTS idx_password_resets_user ON password_resets (user_id);
+
+-- Every move an order has made, in order. See schema.sql for why the current
+-- state lives on orders rather than being derived from the newest row here.
+CREATE TABLE IF NOT EXISTS order_events (
+  id         SERIAL PRIMARY KEY,
+  order_id   INTEGER     NOT NULL REFERENCES orders (id) ON DELETE CASCADE,
+  -- Null for anything the shop did to itself rather than a person doing it.
+  actor_id   INTEGER     REFERENCES users (id),
+  from_state VARCHAR(16),
+  to_state   VARCHAR(16) NOT NULL,
+  note       TEXT,
+  at         TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_order_events_order ON order_events (order_id, id);

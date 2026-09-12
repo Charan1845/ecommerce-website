@@ -44,6 +44,14 @@ function statsHtml(s) {
  * Revenue counts paid orders only. A dashboard that counts pending ones is
  * flattering itself - the money has not arrived.
  */
+/** What each move is called on a button. */
+const MOVE_LABELS = {
+  packed: 'Mark packed',
+  shipped: 'Mark shipped',
+  delivered: 'Mark delivered',
+  cancelled: 'Cancel order',
+};
+
 function orderCard(order) {
   const rows = order.items
     .map(
@@ -64,11 +72,16 @@ function orderCard(order) {
            : ''}`
       : 'Not paid yet.';
 
+  const moves = moveButtons(order);
+
   return `
     <section class="panel" style="margin-bottom:18px">
       <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:14px">
         <h2 style="margin:0">Order #${order.id}</h2>
         <span class="pill ${esc(order.status)}">${esc(order.status)}</span>
+        <span class="pill fulfil ${esc(order.fulfilment_status || 'processing')}">${esc(
+          order.fulfilment_status || 'processing'
+        )}</span>
         <span style="color:var(--ink-soft)">${when(order.placed_at)}</span>
         <strong style="margin-left:auto; font-size:18px">${rupees(order.total_paise)}</strong>
       </div>
@@ -108,7 +121,44 @@ function orderCard(order) {
           <tbody>${rows}</tbody>
         </table>
       </div>
+
+      ${moves}
     </section>`;
+}
+
+/**
+ * The buttons for moving an order along.
+ *
+ * Which ones exist is decided by the server and arrives as `next_states`.
+ * Working it out here would mean a second copy of the state machine in the
+ * page, and eventually a button that offers a move the server refuses.
+ */
+function moveButtons(order) {
+  const options = order.next_states || [];
+
+  if (!options.length) {
+    const state = order.fulfilment_status || 'processing';
+    return `<p class="small" style="margin:14px 0 0">
+        This order is ${esc(state)} and cannot be moved any further.
+      </p>`;
+  }
+
+  const buttons = options
+    .map(
+      (to) => `<button type="button" class="btn ${to === 'cancelled' ? 'danger' : ''} small"
+                 data-move="${order.id}" data-to="${esc(to)}">${esc(MOVE_LABELS[to] || to)}</button>`
+    )
+    .join('');
+
+  return `<div class="order-moves">
+      <span class="label">Move this order</span>
+      ${buttons}
+      ${
+        options.includes('cancelled')
+          ? '<span class="small">Cancelling puts every item back into stock.</span>'
+          : ''
+      }
+    </div>`;
 }
 
 function customerRow(c) {
@@ -236,6 +286,24 @@ async function runRace() {
   }
 }
 
+/**
+ * The figures at the top and the stock table.
+ *
+ * These two move together, so they are refreshed together: cancelling an order
+ * puts its items back on the shelf, which changes both the stock counts and the
+ * revenue figures. Reloading one without the other leaves the page disagreeing
+ * with itself.
+ */
+async function loadStats() {
+  const [stats, products] = await Promise.all([
+    apiGet('/api/admin/stats'),
+    apiGet('/api/admin/products'),
+  ]);
+
+  document.getElementById('stats').innerHTML = statsHtml(stats);
+  document.getElementById('products').innerHTML = products.products.map(productRow).join('');
+}
+
 async function loadOrders() {
   const params = new URLSearchParams();
   if (filters.status) params.set('status', filters.status);
@@ -245,6 +313,45 @@ async function loadOrders() {
   document.getElementById('orders').innerHTML = orders.length
     ? orders.map(orderCard).join('')
     : '<div class="empty">No orders match that.</div>';
+}
+
+/**
+ * Move an order along.
+ *
+ * Cancelling asks first, because it is the one move that cannot be undone and
+ * it puts stock back - an accidental click there is a real mess to unpick.
+ *
+ * Afterwards the whole list is reloaded rather than the card being patched in
+ * place. The move may have changed stock, and the counts at the top of the page
+ * would otherwise quietly disagree with the orders below them.
+ */
+async function moveOrder(id, to, button) {
+  if (to === 'cancelled') {
+    const sure = window.confirm(
+      `Cancel order #${id}?
+
+Every item on it goes back into stock, and this cannot be undone.`
+    );
+    if (!sure) return;
+  }
+
+  const label = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Working…';
+
+  try {
+    const result = await apiPost(`/api/admin/orders/${id}/status`, { to });
+    hideNotice();
+    showNotice(`Order #${id} is now ${result.order.fulfilment_status}.`, 'success');
+    await Promise.all([loadOrders(), loadStats()]);
+  } catch (err) {
+    // A refusal here is usually "somebody else just moved it", which is
+    // information rather than a failure - so the list is reloaded either way.
+    showNotice(err.message);
+    button.disabled = false;
+    button.textContent = label;
+    loadOrders();
+  }
 }
 
 async function saveStock(id, button) {
@@ -285,18 +392,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('content').hidden = false;
 
   try {
-    const [stats, customers, products] = await Promise.all([
-      apiGet('/api/admin/stats'),
-      apiGet('/api/admin/customers'),
-      apiGet('/api/admin/products'),
-    ]);
+    const customers = await apiGet('/api/admin/customers');
 
-    document.getElementById('stats').innerHTML = statsHtml(stats);
     document.getElementById('customers').innerHTML = customers.customers.length
       ? customers.customers.map(customerRow).join('')
       : '<tr><td colspan="6" style="color:var(--ink-soft)">Nobody has signed up yet.</td></tr>';
-    document.getElementById('products').innerHTML = products.products.map(productRow).join('');
 
+    await loadStats();
     await loadOrders();
     await loadRaceProducts();
   } catch (err) {
@@ -339,5 +441,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('products').addEventListener('click', (e) => {
     const button = e.target.closest('[data-save]');
     if (button) saveStock(Number(button.dataset.save), button);
+  });
+
+  document.getElementById('orders').addEventListener('click', (e) => {
+    const button = e.target.closest('[data-move]');
+    if (button) moveOrder(Number(button.dataset.move), button.dataset.to, button);
   });
 });

@@ -236,6 +236,20 @@ const LATER_COLUMNS = [
   // A PC part's specification, as JSON text. See the note in schema.sql for
   // why this is not JSONB on PostgreSQL.
   { table: 'products', column: 'specs', sqlite: 'TEXT', pg: 'TEXT' },
+  // Where an order physically is. The default backfills every order that
+  // existed before this column did, which is right: they were all placed and
+  // none of them has been packed.
+  //
+  // No CHECK on the migrated path - SQLite cannot add one to an existing
+  // table without rebuilding it, and a constraint that exists on new
+  // databases but not old ones is worse than none: it would pass here and
+  // fail in production. src/fulfilment.js is the single gate either way.
+  {
+    table: 'orders',
+    column: 'fulfilment_status',
+    sqlite: "TEXT NOT NULL DEFAULT 'processing'",
+    pg: "VARCHAR(16) NOT NULL DEFAULT 'processing'",
+  },
 ];
 
 async function migrate() {
