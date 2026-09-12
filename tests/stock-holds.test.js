@@ -263,9 +263,32 @@ test('two sweeps at once release the stock exactly once', async () => {
   const [a, b] = await Promise.all([releaseExpired(), releaseExpired()]);
 
   const releasedBoth = [...a.released, ...b.released];
-  assert.deepEqual(releasedBoth, [id], 'exactly one sweep should have won');
-  assert.equal(a.skipped + b.skipped, 1, 'and the other should have been told it lost');
+  assert.deepEqual(releasedBoth, [id], 'exactly one sweep should have released it');
+
+  // The loser has two honest outcomes and this must accept both, because
+  // which one happens depends on the engine rather than on the code:
+  //
+  //   it read the order, tried, and the conditional UPDATE refused it
+  //     -> skipped 1. This is what SQLite always does, where one connection
+  //        makes the two sweeps take turns.
+  //
+  //   it ran its query after the winner had already committed, found nothing
+  //     expired, and had nothing to try
+  //     -> skipped 0. This is what real PostgreSQL does, where the two sweeps
+  //        genuinely overlap.
+  //
+  // An earlier version of this test insisted on the first and went red on
+  // PostgreSQL - asserting an implementation detail of how the loser lost,
+  // rather than that it did not double-credit anything.
+  assert.ok(a.skipped + b.skipped <= 1, 'nothing should have been refused twice');
+
   assert.equal(await stock(), before, 'four back, not eight');
+
+  const events = await all(
+    "SELECT id FROM order_events WHERE order_id = ? AND to_state = 'cancelled'",
+    [id]
+  );
+  assert.equal(events.length, 1, 'and one cancellation, whichever sweep wrote it');
 });
 
 test('a sweep racing the owner cancelling by hand credits the items once', async () => {
