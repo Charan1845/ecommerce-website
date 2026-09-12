@@ -87,8 +87,12 @@ function createPostgres() {
     },
 
     async columns(table) {
+      // Scoped to the schema we are actually in. Without this, a table of the
+      // same name in another schema answers for ours, and the migration
+      // decides a column already exists when it does not.
       const r = await pool.query(
-        'SELECT column_name FROM information_schema.columns WHERE table_name = $1',
+        `SELECT column_name FROM information_schema.columns
+         WHERE table_name = $1 AND table_schema = current_schema()`,
         [table]
       );
       return r.rows.map((row) => row.column_name);

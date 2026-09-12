@@ -12,7 +12,7 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "seed": "node src/seed.js",
-    "test": "node --test",
+    "test": "node --test --test-concurrency=1",
     "images": "node scripts/make-images.js",
     "photos": "node scripts/fetch-photos.js"
   },
