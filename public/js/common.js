@@ -205,7 +205,7 @@ async function renderHeader() {
   const nav = document.getElementById('nav');
   if (!nav) return;
 
-  const parts = ['<a href="/">Shop</a>'];
+  const parts = ['<a href="/">Shop</a>', '<a href="/build.html">Build a PC</a>'];
 
   if (user) {
     let count = 0;

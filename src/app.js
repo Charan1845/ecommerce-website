@@ -18,6 +18,7 @@ const cartRoutes = require('./routes/cart');
 const orderRoutes = require('./routes/orders');
 const adminRoutes = require('./routes/admin');
 const paymentRoutes = require('./routes/payments');
+const buildRoutes = require('./routes/build');
 
 // The only page a logged-out visitor may open. Everything else sends them
 // here first. Stylesheets, scripts and images stay reachable, otherwise the
@@ -82,6 +83,7 @@ function createApp() {
   app.use('/api/orders', orderRoutes);
   app.use('/api/admin', adminRoutes);
   app.use('/api/payments', paymentRoutes);
+  app.use('/api/build', buildRoutes);
 
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
 

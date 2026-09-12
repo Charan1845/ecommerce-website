@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    // Decide the theme before anything paints, so there's no light-then-dark
+    // flash. The toggle button itself lives in common.js.
+    (function () {
+      try {
+        var saved = localStorage.getItem('theme');
+        var dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+        if (dark) document.documentElement.dataset.theme = 'dark';
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <title>Customise your PC - DevGear</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="logo" href="/">Dev<span>Gear</span></a>
+      <nav id="nav"><a href="/">Shop</a></nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <h1>Customise your PC</h1>
+    <p class="subtitle">
+      Pick a part for each slot. Every choice is checked against the others as you
+      go - sockets, memory type, clearance inside the case and whether the power
+      supply can actually carry it.
+    </p>
+
+    <div id="notice" class="notice" hidden></div>
+
+    <div class="build-layout">
+      <!-- Left: one row per slot. Filled in by js/build.js. -->
+      <section id="slots" class="slots" aria-label="Parts"></section>
+
+      <!-- Right: the running verdict. Sticks to the top on a wide screen. -->
+      <aside class="build-summary" aria-label="Your build">
+        <div class="summary-card">
+          <h2>Your build</h2>
+
+          <dl class="summary-figures">
+            <div>
+              <dt>Parts chosen</dt>
+              <dd id="fig-parts">0 of 8</dd>
+            </div>
+            <div>
+              <dt>Estimated draw</dt>
+              <dd id="fig-watts">&mdash;</dd>
+            </div>
+            <div class="total">
+              <dt>Total</dt>
+              <dd id="fig-total">&#8377;0</dd>
+            </div>
+          </dl>
+
+          <div id="verdict" class="verdict"></div>
+
+          <button type="button" class="btn" id="add-build" disabled>Add this build to my cart</button>
+
+          <button type="button" class="btn secondary" id="reset">Start again</button>
+
+          <p class="small" id="checked-note">
+            Checked on the server, not in this page - so the same rules apply
+            however the request arrives.
+          </p>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/build.js"></script>
+</body>
+</html>
