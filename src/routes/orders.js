@@ -12,6 +12,7 @@ const { all, get } = require('../db');
 const { requireAuth } = require('../auth');
 const { placeOrder, OutOfStock } = require('../checkout');
 const { timeline, JOURNEY } = require('../fulfilment');
+const { releaseExpired } = require('../stock-holds');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -57,6 +58,16 @@ router.post('/', async (req, res, next) => {
   }
 
   try {
+    // Give back anything whose hold has lapsed before deciding this order
+    // cannot be filled. Otherwise a customer is told "sold out" because of
+    // somebody else's abandoned checkout that expired forty seconds ago and
+    // the sweeper has not come round yet.
+    await releaseExpired().catch(() => {
+      // A sweep that fails must not stop somebody buying something. The timer
+      // will try again, and the worst case is the stock stays held a minute
+      // longer than it should.
+    });
+
     const order = await placeOrder({ userId: req.user.id, shipping });
     return res.status(201).json({ order });
   } catch (err) {
@@ -80,7 +91,7 @@ router.get('/', async (req, res, next) => {
   try {
     const orders = await all(
       `SELECT id, status, fulfilment_status, total_paise, placed_at,
-              razorpay_payment_id, paid_at, payment_provider
+              razorpay_payment_id, paid_at, payment_provider, hold_expires_at
        FROM orders WHERE user_id = ? ORDER BY placed_at DESC, id DESC`,
       [req.user.id]
     );

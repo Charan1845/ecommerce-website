@@ -92,7 +92,9 @@ CREATE TABLE IF NOT EXISTS orders (
   -- different question from whether it has been paid for.
   fulfilment_status   VARCHAR(16) NOT NULL DEFAULT 'processing'
                       CHECK (fulfilment_status IN
-                        ('processing', 'packed', 'shipped', 'delivered', 'cancelled'))
+                        ('processing', 'packed', 'shipped', 'delivered', 'cancelled')),
+  -- See the note in schema.sql: when this order's hold on its stock runs out.
+  hold_expires_at     TIMESTAMPTZ
 );
 
 CREATE INDEX IF NOT EXISTS idx_orders_user ON orders (user_id, placed_at DESC);

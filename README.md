@@ -120,6 +120,53 @@ Run the same tests with `DATABASE_URL` pointed at PostgreSQL and they do
 overlap for real, because the two checkouts are on separate connections. That
 is the run worth quoting.
 
+## Where an order is, and how long it holds its stock
+
+Checkout takes the stock the moment an order is placed. That is what makes the
+"only 2 left" on a product page true. It has a cost, though: an order nobody
+ever pays for holds those items forever, and on a shop with four of something,
+a handful of abandoned checkouts empties the catalogue without a single sale.
+
+So an unpaid order holds its stock for **fifteen minutes** by default. After
+that the hold lapses, the order is cancelled, and the items go back on sale.
+Set `STOCK_HOLD_MINUTES` to change the window, or to `off` to keep the old
+behaviour where a pending order holds its stock indefinitely.
+
+Releasing a lapsed hold is **not** its own piece of stock arithmetic. It calls
+the same cancel the owner's button calls, which already returns stock inside
+the transaction that wins the status change. Two places that can credit the
+same items is how a shop ends up believing it has more mice than it ever
+bought.
+
+The sweeper refuses to touch anything it does not understand:
+
+| It skips | Because |
+|---|---|
+| paid orders | they have been paid for |
+| packed or shipped orders | the items have physically left; giving them back would be inventing stock |
+| orders with no hold set | they were placed before this existed, and cancelling them all on deploy day would be vandalism |
+| everything, when no payment provider is configured | nobody *can* pay, so cancelling for non-payment would punish customers for the shop's own configuration |
+
+Alongside that, an order moves `processing -> packed -> shipped -> delivered`,
+can drop out to `cancelled` early, and cannot once it has shipped - stopping
+something already on a van is a return, which is different paperwork, not an
+undo. The move is the same conditional UPDATE as the stock guard:
+
+```sql
+UPDATE orders SET fulfilment_status = ? WHERE id = ? AND fulfilment_status = ?
+```
+
+so two owners pressing "ship" at the same instant produce one ship, one honest
+"somebody else just changed this", and exactly one row in the log. Which
+buttons the owner sees comes from the server as `next_states` - a page working
+that out for itself would be a second copy of the state machine, and
+eventually a button offering a move the server refuses.
+
+Fulfilment is a separate column from payment because they are separate
+questions. An order can be paid and still on a shelf, or shipped and still
+unpaid. Folding them into one column is how you end up inventing
+`paid-and-shipped`.
+
 ## Two rules about copying data
 
 The cart stores **no price**. It points at the product, and the price is read

@@ -197,7 +197,11 @@ router.post('/verify', async (req, res, next) => {
     // was paid through a simulator.
     const updated = await run(
       `UPDATE orders
-       SET status = 'paid', razorpay_payment_id = ?, paid_at = ?, payment_provider = ?
+       SET status = 'paid', razorpay_payment_id = ?, paid_at = ?, payment_provider = ?,
+           -- Paid, so the hold is over. Clearing it is what takes the order out
+           -- of the sweeper's reach - leaving it set would let a slow payment
+           -- be cancelled a moment after it succeeded.
+           hold_expires_at = NULL
        WHERE id = ? AND status = 'pending'`,
       [razorpayPaymentId, new Date().toISOString(), provider(), order.id]
     );

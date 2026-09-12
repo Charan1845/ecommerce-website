@@ -84,6 +84,43 @@ const LABELS = {
   cancelled: 'Cancelled',
 };
 
+/**
+ * How much longer this order's stock is held, in words.
+ *
+ * Returns null when there is nothing to say - paid, cancelled, no hold set, or
+ * the hold has already lapsed and the sweeper simply has not come round yet.
+ * Showing "0 minutes left" on an order that is about to be cancelled anyway
+ * would be alarming and useless in equal measure.
+ */
+function holdRemaining(order) {
+  if (order.status !== 'pending' || !order.hold_expires_at) return null;
+
+  const text = String(order.hold_expires_at);
+  const expires = new Date(text.includes('T') ? text : `${text.replace(' ', 'T')}Z`);
+  if (Number.isNaN(expires.getTime())) return null;
+
+  const ms = expires.getTime() - Date.now();
+  if (ms <= 0) return null;
+
+  const minutes = Math.floor(ms / 60000);
+  const seconds = Math.floor((ms % 60000) / 1000);
+
+  if (minutes >= 1) return `${minutes} min ${String(seconds).padStart(2, '0')} sec`;
+  return `${seconds} sec`;
+}
+
+/** The banner telling a customer their stock is being kept for them. */
+function holdHtml(order) {
+  const left = holdRemaining(order);
+  if (!left) return '';
+
+  return `<p class="hold-note" data-hold="${order.id}"
+             data-expires="${esc(order.hold_expires_at)}">
+      These items are held for you for <strong>${esc(left)}</strong>.
+      After that the order is cancelled and they go back on sale.
+    </p>`;
+}
+
 function orderCard(order) {
   const rows = order.items
     .map(
@@ -149,6 +186,7 @@ function orderCard(order) {
 
       ${timelineHtml(order)}
 
+      ${holdHtml(order)}
       ${payRow}
       ${paidNote}
     </section>`;
@@ -366,6 +404,50 @@ async function payForOrder(orderId, button) {
   }
 }
 
+/**
+ * Keep the countdowns honest.
+ *
+ * One timer for the whole page rather than one per order. When a hold runs
+ * out the page reloads its orders once, so the customer sees the cancellation
+ * rather than a banner promising them stock that has just gone back on sale.
+ */
+let ticker = null;
+
+function startCountdowns(orders) {
+  if (ticker) clearInterval(ticker);
+
+  const holds = () => document.querySelectorAll('[data-hold]');
+  if (!holds().length) return;
+
+  ticker = setInterval(() => {
+    const boxes = holds();
+    if (!boxes.length) {
+      clearInterval(ticker);
+      ticker = null;
+      return;
+    }
+
+    let lapsed = false;
+
+    for (const box of boxes) {
+      const id = Number(box.dataset.hold);
+      const order = orders.find((o) => o.id === id);
+      const left = order && holdRemaining(order);
+
+      if (!left) {
+        lapsed = true;
+        continue;
+      }
+
+      box.querySelector('strong').textContent = left;
+    }
+
+    // The server has to be asked what actually happened. The page knowing the
+    // hold ran out is not the same as the order having been cancelled.
+    if (lapsed) load();
+  }, 1000);
+}
+
 async function load() {
   const { orders } = await apiGet('/api/orders');
 
@@ -374,6 +456,8 @@ async function load() {
     ? `${orders.length} order${orders.length === 1 ? '' : 's'}, newest first.`
     : '';
   document.getElementById('orders').innerHTML = orders.map(orderCard).join('');
+
+  startCountdowns(orders);
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

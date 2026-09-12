@@ -10,6 +10,7 @@
  */
 
 const { transaction } = require('./db');
+const { holdUntil } = require('./stock-holds');
 
 /** Raised when somebody else took the last one first. */
 class OutOfStock extends Error {
@@ -100,11 +101,17 @@ async function placeOrder({ userId, shipping }) {
       });
     }
 
+    // The stock above is now this order's, and this is how long it may keep it
+    // while it waits to be paid for. Null when holds are switched off, which
+    // means the order keeps its stock indefinitely - the behaviour before
+    // src/stock-holds.js existed.
+    const holdsUntil = holdUntil();
+
     const created = await tx.get(
       `INSERT INTO orders
          (user_id, status, total_paise, shipping_name, shipping_phone,
-          shipping_address, shipping_state, shipping_pincode)
-       VALUES (?, 'pending', ?, ?, ?, ?, ?, ?)
+          shipping_address, shipping_state, shipping_pincode, hold_expires_at)
+       VALUES (?, 'pending', ?, ?, ?, ?, ?, ?, ?)
        RETURNING id`,
       [
         userId,
@@ -114,6 +121,7 @@ async function placeOrder({ userId, shipping }) {
         shipping.address,
         shipping.state,
         shipping.pincode,
+        holdsUntil,
       ]
     );
 
@@ -130,7 +138,13 @@ async function placeOrder({ userId, shipping }) {
 
     await tx.run('DELETE FROM cart_items WHERE user_id = ?', [userId]);
 
-    return { id: orderId, total_paise: total, status: 'pending', items: lines };
+    return {
+      id: orderId,
+      total_paise: total,
+      status: 'pending',
+      hold_expires_at: holdsUntil,
+      items: lines,
+    };
   });
 }
 

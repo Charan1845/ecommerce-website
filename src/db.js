@@ -250,6 +250,11 @@ const LATER_COLUMNS = [
     sqlite: "TEXT NOT NULL DEFAULT 'processing'",
     pg: "VARCHAR(16) NOT NULL DEFAULT 'processing'",
   },
+  // When an unpaid order stops holding its stock. Nullable on purpose, and
+  // orders that existed before this column have it null - which means they are
+  // never swept. A migration that started expiring old orders would be a
+  // migration that cancelled real ones.
+  { table: 'orders', column: 'hold_expires_at', sqlite: 'TEXT', pg: 'TIMESTAMPTZ' },
 ];
 
 async function migrate() {

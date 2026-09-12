@@ -1329,3 +1329,16 @@ td.num, th.num { text-align: right; }
 
 .order-moves .label { margin-right: 2px; }
 .order-moves .small { color: var(--ink-soft); }
+
+/* The "we are keeping these for you" banner on an unpaid order. */
+.hold-note {
+  margin: 14px 0 0;
+  padding: 10px 13px;
+  border-radius: 8px;
+  border: 1px solid var(--warn);
+  background: var(--warn-bg);
+  color: var(--warn);
+  font-size: 13px;
+}
+
+.hold-note strong { font-variant-numeric: tabular-nums; }

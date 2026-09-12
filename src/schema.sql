@@ -95,7 +95,18 @@ CREATE TABLE IF NOT EXISTS orders (
   -- 'paid-and-shipped-and-partly-refunded'.
   fulfilment_status   TEXT NOT NULL DEFAULT 'processing'
                       CHECK (fulfilment_status IN
-                        ('processing', 'packed', 'shipped', 'delivered', 'cancelled'))
+                        ('processing', 'packed', 'shipped', 'delivered', 'cancelled')),
+  -- How long this order's stock is held while it waits to be paid for.
+  --
+  -- Checkout takes the stock immediately, which is what makes the shop honest
+  -- about what is available. The cost is that an order nobody ever pays for
+  -- sits on those items forever. This is when that hold runs out; after it,
+  -- the sweeper in src/stock-holds.js cancels the order and the stock goes
+  -- back on the shelf.
+  --
+  -- Null means no hold: it has been paid for, or the shop has holds switched
+  -- off, or the order predates this column. Null is never swept.
+  hold_expires_at     TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_orders_user ON orders (user_id, placed_at DESC);

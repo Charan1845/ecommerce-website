@@ -10,6 +10,7 @@ require('dotenv').config();
 const { createApp } = require('./src/app');
 const { applySchema, get, describe } = require('./src/db');
 const { seedProducts, addNewProducts, seedOwner, seedDemo } = require('./src/seed');
+const { startSweeper, releaseExpired, holdsOn, holdMinutes } = require('./src/stock-holds');
 
 const PORT = process.env.PORT || 3000;
 
@@ -59,9 +60,25 @@ async function prepareDatabase() {
 async function main() {
   await prepareDatabase();
 
+  // Anything that expired while the server was down is still holding stock.
+  // Sweep once before opening the doors, so the shop does not spend its first
+  // minute claiming things are sold out when they are not.
+  if (holdsOn()) {
+    const { released } = await releaseExpired();
+    if (released.length) {
+      console.log(`released ${released.length} unpaid order(s) held over from last time`);
+    }
+    startSweeper();
+  }
+
   createApp().listen(PORT, () => {
     console.log(`DevGear listening on port ${PORT}`);
     console.log(`database: ${describe}`);
+    console.log(
+      holdsOn()
+        ? `unpaid orders hold their stock for ${holdMinutes()} minutes`
+        : 'stock holds are off - unpaid orders keep their stock indefinitely'
+    );
   });
 }
 
