@@ -197,7 +197,20 @@ h2 { font-size: 19px; margin: 0 0 12px; }
   margin-bottom: 22px;
 }
 
-.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+
+/* One row per half of the catalogue - see loadCategories in shop.js. */
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+.chip-label {
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-right: 2px;
+  /* Wide enough that the two rows of chips line up under each other. */
+  min-width: 74px;
+}
 
 .chip {
   padding: 7px 15px;
@@ -1062,4 +1075,161 @@ td.num, th.num { text-align: right; }
 @keyframes keycap-float {
   0%, 100% { transform: translateZ(0); }
   50%      { transform: translateZ(9px); }
+}
+
+/* ---------- customise your PC ---------- */
+
+.build-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: 26px;
+  align-items: start;
+}
+
+.slots { display: grid; gap: 18px; min-width: 0; }
+
+.slot {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+  padding: 16px 18px 18px;
+  box-shadow: var(--shadow);
+  /* A grid item is min-width:auto by default, which means "as wide as my
+     contents". The strip of parts inside is 1300px of grid, so without this
+     the slot stretches to fit it and runs out under the summary instead of
+     scrolling. */
+  min-width: 0;
+}
+
+/* A slot named in a problem gets an edge, so a complaint in the summary has
+   somewhere on the page to point at. */
+.slot.has-problem { border-color: var(--bad); }
+
+.slot-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 14px;
+  margin-bottom: 12px;
+}
+
+.slot-head h2 { font-size: 16px; margin: 0; }
+
+.slot-head .optional {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
+  font-weight: 400;
+}
+
+.slot-chosen { margin: 0; font-size: 13px; color: var(--ink-soft); }
+
+.slot-chosen .clear {
+  font-size: 12px;
+  margin-left: 6px;
+}
+
+/* The options. A horizontal strip that scrolls, so eight slots of six parts
+   do not turn the page into a mile of scrolling. */
+.parts {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 215px;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+  min-width: 0;
+}
+
+.part {
+  display: grid;
+  gap: 5px;
+  align-content: start;
+  text-align: left;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--soft-bg);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease, transform 0.12s ease;
+}
+
+.part:hover:not(:disabled) { border-color: var(--accent); transform: translateY(-1px); }
+
+.part.chosen {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.part.sold { opacity: 0.45; cursor: not-allowed; }
+
+.part-main { display: grid; gap: 1px; }
+.part-name { font-size: 13px; font-weight: 600; line-height: 1.35; }
+.part-brand { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink-faint); }
+.part-spec { font-size: 11.5px; color: var(--ink-soft); line-height: 1.45; }
+.part-price { font-size: 13px; font-weight: 700; }
+
+/* The running verdict. */
+.build-summary { position: sticky; top: 18px; }
+
+.summary-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+  padding: 18px;
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 14px;
+}
+
+.summary-card h2 { font-size: 17px; margin: 0; }
+
+.summary-figures { margin: 0; display: grid; gap: 7px; }
+.summary-figures > div { display: flex; justify-content: space-between; gap: 12px; }
+.summary-figures dt { color: var(--ink-soft); font-size: 13px; }
+.summary-figures dd { margin: 0; font-weight: 600; }
+
+.summary-figures .total {
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+  margin-top: 2px;
+}
+.summary-figures .total dt { color: var(--ink); font-weight: 600; }
+.summary-figures .total dd { font-size: 19px; }
+
+.verdict { display: grid; gap: 10px; }
+
+.issue-group {
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12.5px;
+  border: 1px solid transparent;
+}
+
+.issue-group h3 {
+  margin: 0 0 5px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.issue-group ul { margin: 0; padding-left: 17px; display: grid; gap: 5px; }
+.issue-group p { margin: 0; }
+
+.issue-group.error   { background: var(--bad-bg);  color: var(--bad);  border-color: var(--bad); }
+.issue-group.warning { background: var(--warn-bg); color: var(--warn); }
+.issue-group.ok      { background: var(--good-bg); color: var(--good); }
+.issue-group.missing { background: var(--soft-bg); color: var(--ink-soft); }
+
+@media (max-width: 900px) {
+  .build-layout { grid-template-columns: 1fr; }
+  /* Sticking the summary to the top of a narrow screen would cover the parts
+     it is talking about. */
+  .build-summary { position: static; }
 }

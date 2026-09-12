@@ -1,5 +1,5 @@
 /**
- * Fills an empty database with the 48 products, the shop owner and the shared
+ * Fills an empty database with the catalogue, the shop owner and the shared
  * demo account.
  *
  * Run it with:  npm run seed
@@ -26,8 +26,8 @@ async function seedProducts() {
   await transaction(async (tx) => {
     for (const p of products) {
       await tx.run(
-        `INSERT INTO products (id, name, brand, category, price_paise, description, image, stock)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `INSERT INTO products (id, name, brand, category, price_paise, description, image, stock, specs)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT (id) DO UPDATE SET
            name        = excluded.name,
            brand       = excluded.brand,
@@ -35,13 +35,65 @@ async function seedProducts() {
            price_paise = excluded.price_paise,
            description = excluded.description,
            image       = excluded.image,
-           stock       = excluded.stock`,
-        [p.id, p.name, p.brand, p.category, p.price_paise, p.description, p.image, p.stock]
+           stock       = excluded.stock,
+           specs       = excluded.specs`,
+        [
+          p.id,
+          p.name,
+          p.brand,
+          p.category,
+          p.price_paise,
+          p.description,
+          p.image,
+          p.stock,
+          // Stored as text, so it goes in as text. Only PC parts have any.
+          p.specs ? JSON.stringify(p.specs) : null,
+        ]
       );
     }
   });
 
   return products.length;
+}
+
+/**
+ * Add catalogue entries this database has never seen, and touch nothing else.
+ *
+ * seedProducts above deliberately resets stock to the starting numbers, which
+ * is right when you ask for it by hand and quite wrong on every boot of a
+ * running shop - it would undo every sale since the last deploy.
+ *
+ * This is the version that is safe to run unattended: ON CONFLICT DO NOTHING,
+ * so an existing product keeps its stock, its price and any edit the owner has
+ * made, and only genuinely new ids are inserted.
+ */
+async function addNewProducts() {
+  const products = JSON.parse(fs.readFileSync(CATALOGUE, 'utf8'));
+  let added = 0;
+
+  await transaction(async (tx) => {
+    for (const p of products) {
+      const result = await tx.run(
+        `INSERT INTO products (id, name, brand, category, price_paise, description, image, stock, specs)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT (id) DO NOTHING`,
+        [
+          p.id,
+          p.name,
+          p.brand,
+          p.category,
+          p.price_paise,
+          p.description,
+          p.image,
+          p.stock,
+          p.specs ? JSON.stringify(p.specs) : null,
+        ]
+      );
+      if (result.changes > 0) added += 1;
+    }
+  });
+
+  return added;
 }
 
 async function seedOwner() {
@@ -127,4 +179,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { seedProducts, seedOwner, seedDemo };
+module.exports = { seedProducts, addNewProducts, seedOwner, seedDemo };

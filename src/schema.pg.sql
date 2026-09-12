@@ -39,7 +39,10 @@ CREATE TABLE IF NOT EXISTS products (
   -- The number this whole project is about.
   -- The CHECK is a last line of defence: even if application code has a bug,
   -- the database itself refuses to let stock go negative.
-  stock       INTEGER      NOT NULL DEFAULT 0 CHECK (stock >= 0)
+  stock       INTEGER      NOT NULL DEFAULT 0 CHECK (stock >= 0),
+  -- See the note in schema.sql. TEXT rather than JSONB so a row reads the
+  -- same way on both engines.
+  specs       TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_products_category ON products (category);

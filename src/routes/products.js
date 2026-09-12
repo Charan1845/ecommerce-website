@@ -12,6 +12,7 @@ const path = require('node:path');
 const express = require('express');
 const { all, get } = require('../db');
 const { requireAuth } = require('../auth');
+const { CATEGORIES, groupOf, withSpecs } = require('../catalogue');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -38,10 +39,20 @@ const PHOTO_CREDITS = (() => {
 
 const creditFor = (image) => PHOTO_CREDITS[image] || null;
 
-const CATEGORIES = ['Keyboards', 'Mouse', 'Headsets', 'Monitors'];
+/**
+ * "Featured" means the order in catalogue.js - keyboards first, cooling last -
+ * not alphabetical. With twelve categories, alphabetical opens the shop on
+ * Cabinets, which is nobody's idea of the front of a shop.
+ *
+ * The CASE is built from a constant in our own code, never from the request,
+ * so there is nothing here a visitor can influence.
+ */
+const CATEGORY_ORDER = `CASE category ${CATEGORIES.map(
+  (name, i) => `WHEN '${name.replace(/'/g, "''")}' THEN ${i}`
+).join(' ')} ELSE ${CATEGORIES.length} END`;
 
 const SORTS = {
-  featured: 'category, brand, name',
+  featured: `${CATEGORY_ORDER}, brand, name`,
   'price-low': 'price_paise ASC',
   'price-high': 'price_paise DESC',
   name: 'name ASC',
@@ -82,7 +93,8 @@ router.get('/', async (req, res, next) => {
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const orderBy = SORTS[req.query.sort] || SORTS.featured;
 
-    const products = await all(`SELECT * FROM products ${where} ORDER BY ${orderBy}`, params);
+    const rows = await all(`SELECT * FROM products ${where} ORDER BY ${orderBy}`, params);
+    const products = rows.map(withSpecs);
     return res.json({ products, count: products.length });
   } catch (err) {
     return next(err);
@@ -99,7 +111,15 @@ router.get('/meta/categories', async (_req, res, next) => {
     // PostgreSQL returns COUNT(*) as a string, because a bigint does not
     // always fit in a JavaScript number. These counts are tiny, so make them
     // numbers before they reach the page.
-    return res.json({ categories: rows.map((r) => ({ ...r, count: Number(r.count) })) });
+    //
+    // Sorted by the order in CATEGORIES rather than alphabetically, so the
+    // chips read Processors, Motherboards, Graphics Cards - the order you
+    // would actually buy them in - instead of Cabinets, Cooling, Graphics.
+    const categories = rows
+      .map((r) => ({ ...r, count: Number(r.count), group: groupOf(r.category) }))
+      .sort((a, b) => CATEGORIES.indexOf(a.category) - CATEGORIES.indexOf(b.category));
+
+    return res.json({ categories });
   } catch (err) {
     return next(err);
   }
@@ -123,15 +143,17 @@ router.get('/:id', async (req, res, next) => {
       return res.status(400).json({ error: 'Bad product id.' });
     }
 
-    const product = await get('SELECT * FROM products WHERE id = ?', [id]);
+    const product = withSpecs(await get('SELECT * FROM products WHERE id = ?', [id]));
     if (!product) {
       return res.status(404).json({ error: 'No such product.' });
     }
 
-    const related = await all(
-      'SELECT * FROM products WHERE category = ? AND id != ? ORDER BY RANDOM() LIMIT 4',
-      [product.category, product.id]
-    );
+    const related = (
+      await all(
+        'SELECT * FROM products WHERE category = ? AND id != ? ORDER BY RANDOM() LIMIT 4',
+        [product.category, product.id]
+      )
+    ).map(withSpecs);
 
     // Photographers get named on the page they appear on.
     product.photo_credit = creditFor(product.image);
@@ -144,3 +166,4 @@ router.get('/:id', async (req, res, next) => {
 
 module.exports = router;
 module.exports.CATEGORIES = CATEGORIES;
+

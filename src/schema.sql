@@ -33,7 +33,16 @@ CREATE TABLE IF NOT EXISTS products (
   -- The number this whole project is about.
   -- The CHECK is a last line of defence: even if application code has a bug,
   -- the database itself refuses to let stock go negative.
-  stock       INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0)
+  stock       INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0),
+  -- What a PC part has to agree with the rest of a build about: socket,
+  -- memory type, wattage, physical length. JSON in a text column rather than
+  -- thirty mostly-empty columns, because a keyboard has none of them and a
+  -- motherboard has a different set again.
+  --
+  -- Text on both engines on purpose. PostgreSQL has JSONB and it is better,
+  -- but then the same row would come back parsed on one engine and as a
+  -- string on the other, and every reader would have to know which.
+  specs       TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_products_category ON products (category);

@@ -9,7 +9,7 @@ require('dotenv').config();
 
 const { createApp } = require('./src/app');
 const { applySchema, get, describe } = require('./src/db');
-const { seedProducts, seedOwner, seedDemo } = require('./src/seed');
+const { seedProducts, addNewProducts, seedOwner, seedDemo } = require('./src/seed');
 
 const PORT = process.env.PORT || 3000;
 
@@ -27,7 +27,16 @@ async function prepareDatabase() {
   if (process.env.SEED_ON_BOOT === 'off') return;
 
   const existing = await get('SELECT COUNT(*) AS n FROM products');
-  if (Number(existing.n) > 0) return;
+
+  if (Number(existing.n) > 0) {
+    // A shop that is already running. Do not re-seed it - that would reset
+    // every stock count - but do add products the catalogue has gained since
+    // this database was filled, or a new range would deploy as an empty
+    // category and nobody would know why.
+    const added = await addNewProducts();
+    if (added) console.log(`added ${added} new products from the catalogue`);
+    return;
+  }
 
   console.log('empty database - setting it up');
 

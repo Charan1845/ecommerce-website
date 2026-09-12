@@ -233,6 +233,9 @@ const LATER_COLUMNS = [
   // Google's permanent id for an account. Matched on instead of email,
   // because people change their email address and Google keeps this.
   { table: 'users', column: 'google_sub', sqlite: 'TEXT', pg: 'VARCHAR(40)' },
+  // A PC part's specification, as JSON text. See the note in schema.sql for
+  // why this is not JSONB on PostgreSQL.
+  { table: 'products', column: 'specs', sqlite: 'TEXT', pg: 'TEXT' },
 ];
 
 async function migrate() {

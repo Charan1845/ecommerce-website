@@ -46,19 +46,42 @@ async function loadProducts() {
   }
 }
 
+/** One filter chip. `category` of '' is the All chip. */
+function chipHtml({ category, count, label }) {
+  const active = category === state.category ? 'active' : '';
+  const suffix = count ? ` (${count})` : '';
+  return `<button class="chip ${active}" data-category="${esc(category)}">${esc(
+    label || category
+  )}${suffix}</button>`;
+}
+
 async function loadCategories() {
   const { categories } = await apiGet('/api/products/meta/categories');
   const chips = document.getElementById('categories');
 
-  const all = [{ category: '', count: null, label: 'All' }, ...categories];
-  chips.innerHTML = all
-    .map(
-      (c) => `<button class="chip ${c.category === state.category ? 'active' : ''}"
-                 data-category="${esc(c.category)}">${esc(c.label || c.category)}${
-                   c.count ? ` (${c.count})` : ''
-                 }</button>`
-    )
-    .join('');
+  // Twelve categories in one row is a wall. The API says which half each one
+  // belongs to, so they go in two labelled rows instead - peripherals you buy
+  // on their own, and parts you buy to build something.
+  const groups = [];
+  for (const c of categories) {
+    const group = c.group || 'Other';
+    const row = groups.find((g) => g.name === group);
+    if (row) row.items.push(c);
+    else groups.push({ name: group, items: [c] });
+  }
+
+  const rows = [`<div class="chip-row">${chipHtml({ category: '', label: 'All' })}</div>`];
+
+  for (const group of groups) {
+    rows.push(
+      `<div class="chip-row">
+         <span class="chip-label">${esc(group.name)}</span>
+         ${group.items.map(chipHtml).join('')}
+       </div>`
+    );
+  }
+
+  chips.innerHTML = rows.join('');
 }
 
 async function addToCart(productId, button) {
